@@ -1,0 +1,3187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ManageAll — Student Attendance & Fee Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: '#0F172A',
+            cobalt: '#2563EB',
+            emerald: '#10B981',
+            amber: '#F59E0B',
+            rose: '#EF4444',
+            canvas: '#F8FAFC',
+            surface: '#FFFFFF',
+            border: '#F1F5F9',
+            muted: '#94A3B8',
+            slate200: '#E2E8F0',
+            slate300: '#CBD5E1',
+            slate400: '#94A3B8',
+            slate500: '#64748B',
+            slate600: '#475569',
+            slate700: '#334155',
+            slate800: '#1E293B',
+          },
+          fontFamily: {
+            heading: ['Hanken Grotesk', 'sans-serif'],
+            body: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          borderRadius: {
+            input: '4px',
+            card: '8px',
+            full: '9999px',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #F8FAFC; }
+    h1,h2,h3,h4,h5 { font-family: 'Hanken Grotesk', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #F1F5F9; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+    /* Sidebar */
+    #sidebar {
+      width: 240px;
+      min-width: 240px;
+      transition: width 0.25s ease, min-width 0.25s ease;
+      background: #0F172A;
+      overflow: hidden;
+    }
+    #sidebar.collapsed {
+      width: 60px;
+      min-width: 60px;
+    }
+    #sidebar .nav-label { transition: opacity 0.2s; white-space: nowrap; }
+    #sidebar.collapsed .nav-label { opacity: 0; pointer-events: none; width: 0; overflow: hidden; }
+    #sidebar .logo-text { transition: opacity 0.2s; white-space: nowrap; }
+    #sidebar.collapsed .logo-text { opacity: 0; width: 0; overflow: hidden; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px; border-radius: 8px; cursor: pointer;
+      transition: background 0.15s; color: #94A3B8;
+      font-size: 14px; font-weight: 500;
+    }
+    .nav-item:hover { background: rgba(37,99,235,0.15); color: #fff; }
+    .nav-item.active { background: #2563EB; color: #fff; }
+    .nav-item .material-symbols-outlined { font-size: 20px; flex-shrink: 0; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(15,23,42,0.4);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: #fff; border-radius: 8px;
+      max-width: 600px; width: 95%;
+      max-height: 90vh; display: flex; flex-direction: column;
+      transform: scale(0.95); transition: transform 0.2s;
+      box-shadow: 0 20px 60px rgba(15,23,42,0.2);
+    }
+    .modal-overlay.open .modal-box { transform: scale(1); }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid #F1F5F9; display: flex; gap: 10px; justify-content: flex-end; flex-shrink: 0; }
+
+    /* Drawer */
+    #drawer-student-detail {
+      position: fixed; top: 0; right: -520px; width: 520px; height: 100vh;
+      background: #fff; z-index: 1000; box-shadow: -8px 0 30px rgba(15,23,42,0.15);
+      transition: right 0.3s ease; display: flex; flex-direction: column;
+    }
+    #drawer-student-detail.open { right: 0; }
+    #drawer-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.3);
+      z-index: 999; display: none;
+    }
+    #drawer-overlay.open { display: block; }
+
+    /* Toast */
+    #toast-container {
+      position: fixed; bottom: 24px; right: 24px;
+      z-index: 2000; display: flex; flex-direction: column; gap: 10px;
+    }
+    .toast {
+      display: flex; align-items: center; gap: 12px;
+      background: #0F172A; color: #fff;
+      padding: 12px 18px; border-radius: 8px;
+      font-size: 14px; min-width: 280px; max-width: 380px;
+      box-shadow: 0 8px 24px rgba(15,23,42,0.3);
+      animation: toastIn 0.3s ease;
+    }
+    @keyframes toastIn { from { opacity:0; transform: translateY(16px); } to { opacity:1; transform: translateY(0); } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; transform: translateY(8px); } }
+
+    /* Table */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .data-table thead tr { background: #F8FAFC; }
+    .data-table th { padding: 10px 14px; text-align: left; font-weight: 600; color: #475569; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #E2E8F0; }
+    .data-table td { padding: 10px 14px; border-bottom: 1px solid #F1F5F9; color: #1E293B; height: 44px; }
+    .data-table tbody tr:hover { background: #F8FAFC; }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+
+    /* Badges */
+    .badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .badge-emerald { background: #D1FAE5; color: #065F46; }
+    .badge-amber { background: #FEF3C7; color: #92400E; }
+    .badge-rose { background: #FEE2E2; color: #991B1B; }
+    .badge-cobalt { background: #DBEAFE; color: #1E40AF; }
+    .badge-navy { background: #E0E7FF; color: #1E1B4B; }
+    .badge-slate { background: #F1F5F9; color: #475569; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; border: none; outline: none; }
+    .btn-primary { background: #0F172A; color: #fff; }
+    .btn-primary:hover { background: #1E293B; }
+    .btn-secondary { background: #2563EB; color: #fff; }
+    .btn-secondary:hover { background: #1D4ED8; }
+    .btn-danger { background: #EF4444; color: #fff; }
+    .btn-danger:hover { background: #DC2626; }
+    .btn-outline { background: #fff; color: #0F172A; border: 1px solid #E2E8F0; }
+    .btn-outline:hover { background: #F8FAFC; }
+    .btn-ghost { background: transparent; color: #475569; }
+    .btn-ghost:hover { background: #F1F5F9; }
+    .btn .material-symbols-outlined { font-size: 18px; }
+
+    /* Form inputs */
+    .form-input {
+      width: 100%; padding: 9px 12px; border: 1px solid #E2E8F0;
+      border-radius: 4px; font-size: 14px; color: #0F172A;
+      background: #fff; outline: none; transition: border-color 0.15s;
+      font-family: 'Inter', sans-serif;
+    }
+    .form-input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .form-label { display: block; font-size: 13px; font-weight: 500; color: #475569; margin-bottom: 5px; }
+    .form-group { margin-bottom: 16px; }
+
+    /* KPI Cards */
+    .kpi-card { background: #fff; border-radius: 8px; padding: 20px; border: 1px solid #F1F5F9; }
+
+    /* Attendance toggle */
+    .att-btn { padding: 5px 10px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid; transition: all 0.15s; }
+    .att-btn.present { background: #D1FAE5; color: #065F46; border-color: #10B981; }
+    .att-btn.absent { background: #FEE2E2; color: #991B1B; border-color: #EF4444; }
+    .att-btn.late { background: #FEF3C7; color: #92400E; border-color: #F59E0B; }
+    .att-btn.none { background: #F1F5F9; color: #64748B; border-color: #CBD5E1; }
+
+    /* Charts */
+    .bar-chart-bar { height: 28px; border-radius: 4px; background: #2563EB; transition: width 0.6s ease; display: flex; align-items: center; padding: 0 8px; color: #fff; font-size: 12px; font-weight: 600; }
+    .donut-ring { position: relative; width: 120px; height: 120px; }
+    .donut-ring svg { transform: rotate(-90deg); }
+
+    /* Calendar Heatmap */
+    .cal-cell { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; cursor: pointer; }
+    .cal-p { background: #D1FAE5; color: #065F46; }
+    .cal-a { background: #FEE2E2; color: #991B1B; }
+    .cal-l { background: #FEF3C7; color: #92400E; }
+    .cal-n { background: #F1F5F9; color: #94A3B8; }
+    .cal-h { background: #fff; color: #CBD5E1; border: 1px solid #F1F5F9; }
+
+    /* Login */
+    #app-login { min-height: 100vh; background: #F8FAFC; display: flex; align-items: center; justify-content: center; }
+    .login-left { background: #0F172A; border-radius: 12px 0 0 12px; overflow: hidden; }
+    .tab-btn { padding: 10px 20px; font-weight: 600; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; color: #94A3B8; transition: all 0.15s; }
+    .tab-btn.active { color: #2563EB; border-bottom-color: #2563EB; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      #sidebar { position: fixed; left: -240px; z-index: 100; height: 100vh; transition: left 0.25s; }
+      #sidebar.mobile-open { left: 0; }
+      .login-left { display: none; }
+      .login-card { border-radius: 12px; }
+    }
+
+    /* Expandable row */
+    .expand-row { display: none; }
+    .expand-row.open { display: table-row; }
+
+    /* Avatar */
+    .avatar { width: 40px; height: 40px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+
+    /* Notification dot */
+    .notif-dot { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #EF4444; border-radius: 9999px; }
+
+    /* Search */
+    .search-wrap { position: relative; }
+    .search-wrap .material-symbols-outlined { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 18px; }
+    .search-wrap input { padding-left: 36px; }
+
+    /* Collapsible fee structure */
+    #fee-structure-panel { transition: max-height 0.3s ease, opacity 0.3s; overflow: hidden; }
+
+    /* Progress bar */
+    .progress-bar { height: 6px; border-radius: 9999px; background: #E2E8F0; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 9999px; transition: width 0.5s; }
+
+    /* Stat summary card in attendance */
+    .stat-summary { display: grid; gap: 10px; }
+
+    /* Payment history expand */
+    .payment-history-row { background: #F8FAFC; }
+    .payment-table { width: 100%; font-size: 12.5px; }
+    .payment-table th, .payment-table td { padding: 7px 12px; text-align: left; }
+
+    /* Report card */
+    .report-card { background: #fff; border-radius: 8px; border: 1px solid #F1F5F9; overflow: hidden; }
+    .report-card-header { padding: 16px 20px; border-bottom: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between; }
+
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  </style>
+  <!-- Firebase v9/v10 Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<!-- ==================== LOGIN PAGE ==================== -->
+<div id="app-login">
+  <!-- Firebase Config Warning Banner (visible when using placeholder keys) -->
+  <div id="firebase-config-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#FFFBEB;border-bottom:2px solid #F59E0B;padding:12px 20px;">
+    <div style="max-width:960px;margin:0 auto;display:flex;align-items:center;gap:12px;">
+      <span class="material-symbols-outlined" style="color:#F59E0B;flex-shrink:0;">warning</span>
+      <div style="flex:1;">
+        <strong style="color:#92400E;font-size:13.5px;">⚙️ Firebase Setup Notice:</strong>
+        <span style="color:#78350F;font-size:13px;margin-left:6px;">Add your Firebase project config at the top of the <code style="background:#FDE68A;padding:1px 5px;border-radius:3px;">&lt;script&gt;</code> in <code style="background:#FDE68A;padding:1px 5px;border-radius:3px;">index.html</code>. (See <code style="background:#FDE68A;padding:1px 5px;border-radius:3px;">FIREBASE_SETUP.md</code>). Local demo fallback mode is active.</span>
+      </div>
+      <button onclick="document.getElementById('firebase-config-banner').style.display='none'" style="background:none;border:none;cursor:pointer;color:#92400E;font-size:18px;font-weight:bold;">×</button>
+    </div>
+  </div>
+
+  <div style="max-width:960px;width:100%;margin:36px auto 24px;border-radius:12px;overflow:hidden;box-shadow:0 24px 64px rgba(15,23,42,0.18);display:flex;min-height:580px;">
+    <!-- Left Panel -->
+    <div class="login-left flex flex-col justify-between p-10" style="flex:1;background:linear-gradient(135deg,#0F172A 0%,#1E3A6E 100%);position:relative;">
+      <div style="position:absolute;inset:0;background:url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 400 400\"><defs><radialGradient id=\"g\" cx=\"50%\" cy=\"50%\" r=\"70%\"><stop offset=\"0%\" stop-color=\"%232563EB\" stop-opacity=\"0.3\"/><stop offset=\"100%\" stop-color=\"%230F172A\" stop-opacity=\"0\"/></radialGradient></defs><rect width=\"400\" height=\"400\" fill=\"url(%23g)\"/></svg>') center/cover no-repeat; opacity:0.7;"></div>
+      <div style="position:relative;z-index:1;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:40px;">
+          <div style="width:38px;height:38px;background:#2563EB;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+            <span class="material-symbols-outlined" style="color:#fff;font-size:22px;">school</span>
+          </div>
+          <span style="color:#fff;font-family:'Hanken Grotesk',sans-serif;font-size:22px;font-weight:800;">ManageAll</span>
+        </div>
+        <div>
+          <h2 style="color:#fff;font-family:'Hanken Grotesk',sans-serif;font-size:26px;font-weight:700;margin-bottom:12px;line-height:1.3;">Student Attendance &amp; Fee Management Portal</h2>
+          <p style="color:#94A3B8;font-size:14px;line-height:1.6;">A secure system for faculty and administrators to record attendance, manage fee collections, and track academic records.</p>
+        </div>
+      </div>
+
+      <div style="position:relative;z-index:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:14px;margin-top:20px;">
+        <div style="color:#60A5FA;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Faculty Onboarding Workflow:</div>
+        <div style="display:flex;flex-direction:column;gap:6px;color:#CBD5E1;font-size:12.5px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:16px;color:#10B981;">mail</span> 1. Register with email
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:16px;color:#38BDF8;">mark_email_read</span> 2. Verify link sent to Gmail
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:16px;color:#F59E0B;">admin_panel_settings</span> 3. Administrator reviews &amp; approves
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:16px;color:#A7F3D0;">login</span> 4. Login window unlocks for faculty
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Right Panel -->
+    <div style="flex:1.15;background:#fff;padding:36px;display:flex;flex-direction:column;justify-content:center;" class="login-card">
+      <div style="margin-bottom:18px;">
+        <h3 style="font-family:'Hanken Grotesk',sans-serif;font-size:22px;font-weight:700;color:#0F172A;margin-bottom:4px;">Portal Authentication</h3>
+        <p style="color:#64748B;font-size:13.5px;">Sign in to your account or register as new faculty</p>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;border-bottom:1px solid #E2E8F0;margin-bottom:20px;">
+        <button class="tab-btn active" onclick="switchLoginTab('signin')" id="tab-signin">Sign In</button>
+        <button class="tab-btn" onclick="switchLoginTab('register')" id="tab-register">Faculty Registration</button>
+      </div>
+
+      <!-- Dynamic Status / Alert Box -->
+      <div id="login-status-box" style="display:none;margin-bottom:16px;"></div>
+
+      <!-- Sign In Form -->
+      <div id="login-signin-form">
+        <div class="form-group" style="margin-bottom:14px;">
+          <label class="form-label">Official Email Address</label>
+          <input type="email" id="login-email" class="form-input" placeholder="e.g. faculty@apex.edu or admin@manageall.edu" value="admin@manageall.edu" />
+        </div>
+        <div class="form-group" style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <label class="form-label" style="margin-bottom:0;">Password</label>
+            <span onclick="handleForgotPassword()" style="font-size:12px;color:#2563EB;cursor:pointer;">Forgot password?</span>
+          </div>
+          <input type="password" id="login-password" class="form-input" placeholder="Enter password" value="admin123" />
+        </div>
+
+        <button id="btn-login-submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;font-size:14px;" onclick="handleLogin()">
+          <span class="material-symbols-outlined">login</span> Sign In
+        </button>
+
+        <div style="margin-top:16px;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;font-size:12px;color:#475569;display:flex;justify-content:space-between;align-items:center;">
+          <span>Default Demo Admin: <code style="color:#2563EB;font-family:'JetBrains Mono',monospace;">admin@manageall.edu / admin123</code></span>
+          <button onclick="fillDemoAdmin()" class="btn btn-ghost" style="padding:2px 6px;font-size:11px;color:#2563EB;">Fill</button>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="login-register-form" style="display:none;">
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:10px 12px;margin-bottom:14px;display:flex;gap:8px;align-items:flex-start;">
+          <span class="material-symbols-outlined" style="color:#2563EB;flex-shrink:0;font-size:18px;margin-top:1px;">verified_user</span>
+          <div style="font-size:12.5px;color:#1E40AF;line-height:1.4;">
+            <strong>Faculty Verification Notice:</strong> A verification link will be dispatched to your Gmail. Once verified, your request must be approved by the administrator before you can log in.
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">Full Name *</label>
+            <input type="text" id="reg-name" class="form-input" placeholder="Prof. Jane Doe" />
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">Department *</label>
+            <select id="reg-dept" class="form-input">
+              <option value="">Select Department</option>
+              <option>Computer Science &amp; AI</option>
+              <option>Electrical Engineering</option>
+              <option>Business Administration</option>
+              <option>Mechanical Engineering</option>
+              <option>Biomedical Sciences</option>
+              <option>Humanities &amp; Social Inquiry</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Official Email (Gmail / University) *</label>
+          <input type="email" id="reg-email" class="form-input" placeholder="jane.doe@gmail.com or j.doe@apex.edu" />
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">Create Password *</label>
+            <input type="password" id="reg-password" class="form-input" placeholder="Min 6 characters" />
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">Confirm Password *</label>
+            <input type="password" id="reg-confirm" class="form-input" placeholder="Repeat password" />
+          </div>
+        </div>
+
+        <button id="btn-reg-submit" class="btn btn-secondary" style="width:100%;justify-content:center;padding:11px;font-size:14px;" onclick="handleRegister()">
+          <span class="material-symbols-outlined">how_to_reg</span> Submit Registration &amp; Send Verification
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MAIN APP ==================== -->
+<div id="app-main" class="hidden" style="display:none;flex:1;height:100vh;overflow:hidden;flex-direction:row;">
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="flex flex-col h-full">
+    <!-- Logo -->
+    <div style="padding:18px 16px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:10px;">
+      <div style="width:32px;height:32px;background:#2563EB;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span class="material-symbols-outlined" style="color:#fff;font-size:18px;">school</span>
+      </div>
+      <span class="logo-text" style="color:#fff;font-family:'Hanken Grotesk',sans-serif;font-size:17px;font-weight:800;">ManageAll</span>
+    </div>
+    <!-- Nav -->
+    <nav style="flex:1;padding:12px 10px;overflow-y:auto;">
+      <div class="nav-item active" onclick="showView('dashboard')" id="nav-dashboard">
+        <span class="material-symbols-outlined">dashboard</span>
+        <span class="nav-label">Dashboard</span>
+      </div>
+      <div class="nav-item" onclick="showView('students')" id="nav-students">
+        <span class="material-symbols-outlined">groups</span>
+        <span class="nav-label">Students</span>
+      </div>
+      <div class="nav-item" onclick="showView('attendance')" id="nav-attendance">
+        <span class="material-symbols-outlined">fact_check</span>
+        <span class="nav-label">Attendance</span>
+      </div>
+      <div class="nav-item" onclick="showView('fees')" id="nav-fees">
+        <span class="material-symbols-outlined">payments</span>
+        <span class="nav-label">Fees</span>
+      </div>
+      <div class="nav-item" onclick="showView('reports')" id="nav-reports">
+        <span class="material-symbols-outlined">bar_chart</span>
+        <span class="nav-label">Reports</span>
+      </div>
+      <div class="nav-item" onclick="showView('approvals')" id="nav-approvals" style="display:none;position:relative;">
+        <span class="material-symbols-outlined">how_to_reg</span>
+        <span class="nav-label">Approvals</span>
+        <span id="approvals-badge" class="badge badge-rose" style="display:none;position:absolute;right:10px;min-width:18px;height:18px;border-radius:9999px;font-size:10.5px;padding:0 5px;justify-content:center;">0</span>
+      </div>
+    </nav>
+    <!-- Footer -->
+    <div style="padding:12px 10px;border-top:1px solid rgba(255,255,255,0.08);">
+      <div class="nav-item" onclick="openSettings()">
+        <span class="material-symbols-outlined">settings</span>
+        <span class="nav-label">Settings</span>
+      </div>
+      <div class="nav-item" id="sidebar-user-info" style="cursor:default;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:10px;overflow:hidden;">
+          <div class="avatar" id="sidebar-avatar" style="background:#2563EB;color:#fff;width:28px;height:28px;font-size:12px;flex-shrink:0;">A</div>
+          <span class="nav-label" id="sidebar-username" style="color:#fff;font-size:13px;overflow:hidden;text-overflow:ellipsis;">Admin</span>
+        </div>
+        <span id="sidebar-role-badge" class="badge badge-navy" style="font-size:10px;padding:1px 6px;">Admin</span>
+      </div>
+      <div class="nav-item" onclick="handleLogout()">
+        <span class="material-symbols-outlined">logout</span>
+        <span class="nav-label">Logout</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENT AREA -->
+  <div id="content-area" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+    <!-- TOP HEADER -->
+    <header style="background:#fff;border-bottom:1px solid #F1F5F9;padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <button onclick="toggleSidebar()" style="background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;" class="btn-ghost">
+          <span class="material-symbols-outlined" style="font-size:22px;color:#475569;">menu</span>
+        </button>
+        <h1 id="page-title" style="font-family:'Hanken Grotesk',sans-serif;font-size:18px;font-weight:700;color:#0F172A;">Dashboard</h1>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="position:relative;">
+          <button class="btn-ghost btn" onclick="toggleNotifications()">
+            <span class="material-symbols-outlined" style="font-size:22px;color:#475569;">notifications</span>
+            <span id="notif-badge" class="notif-dot"></span>
+          </button>
+        </div>
+        <div style="position:relative;">
+          <button onclick="toggleUserMenu()" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;">
+            <div class="avatar" id="header-avatar" style="background:#2563EB;color:#fff;">A</div>
+            <span id="header-username" style="font-size:14px;font-weight:600;color:#0F172A;">Admin</span>
+            <span class="material-symbols-outlined" style="font-size:16px;color:#94A3B8;">expand_more</span>
+          </button>
+          <div id="user-menu" style="display:none;position:absolute;right:0;top:48px;background:#fff;border:1px solid #E2E8F0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);min-width:180px;z-index:200;">
+            <div style="padding:8px 0;">
+              <div onclick="openSettings()" style="padding:9px 16px;font-size:14px;color:#334155;cursor:pointer;display:flex;align-items:center;gap:8px;" class="hover:bg-slate-50">
+                <span class="material-symbols-outlined" style="font-size:17px;">settings</span>Settings
+              </div>
+              <div onclick="handleLogout()" style="padding:9px 16px;font-size:14px;color:#EF4444;cursor:pointer;display:flex;align-items:center;gap:8px;" class="hover:bg-red-50">
+                <span class="material-symbols-outlined" style="font-size:17px;">logout</span>Logout
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- VIEWS -->
+    <main style="flex:1;overflow-y:auto;padding:24px;background:#F8FAFC;">
+
+      <!-- ===== DASHBOARD ===== -->
+      <div id="view-dashboard">
+        <div style="margin-bottom:20px;">
+          <h2 id="dash-greeting" style="font-family:'Hanken Grotesk',sans-serif;font-size:22px;font-weight:700;color:#0F172A;margin-bottom:4px;">Good morning 👋</h2>
+          <p id="dash-date" style="font-size:14px;color:#64748B;"></p>
+        </div>
+        <!-- KPI Cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+          <div class="kpi-card">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+              <div>
+                <p style="font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Total Students</p>
+                <p id="kpi-total" style="font-family:'Hanken Grotesk',sans-serif;font-size:30px;font-weight:800;color:#0F172A;">0</p>
+              </div>
+              <div style="width:44px;height:44px;background:#EFF6FF;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                <span class="material-symbols-outlined" style="color:#2563EB;font-size:22px;">groups</span>
+              </div>
+            </div>
+            <p style="font-size:12px;color:#64748B;">Enrolled this semester</p>
+          </div>
+          <div class="kpi-card">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+              <div>
+                <p style="font-size:12px;font-weight:600;color:#064E3B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Present Today</p>
+                <p id="kpi-present" style="font-family:'Hanken Grotesk',sans-serif;font-size:30px;font-weight:800;color:#10B981;">0</p>
+              </div>
+              <div style="width:44px;height:44px;background:#D1FAE5;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                <span class="material-symbols-outlined" style="color:#10B981;font-size:22px;">check_circle</span>
+              </div>
+            </div>
+            <div class="progress-bar"><div id="kpi-present-bar" class="progress-fill" style="background:#10B981;width:0%"></div></div>
+          </div>
+          <div class="kpi-card">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+              <div>
+                <p style="font-size:12px;font-weight:600;color:#7F1D1D;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Absent Today</p>
+                <p id="kpi-absent" style="font-family:'Hanken Grotesk',sans-serif;font-size:30px;font-weight:800;color:#EF4444;">0</p>
+              </div>
+              <div style="width:44px;height:44px;background:#FEE2E2;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                <span class="material-symbols-outlined" style="color:#EF4444;font-size:22px;">cancel</span>
+              </div>
+            </div>
+            <div class="progress-bar"><div id="kpi-absent-bar" class="progress-fill" style="background:#EF4444;width:0%"></div></div>
+          </div>
+          <div class="kpi-card">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+              <div>
+                <p style="font-size:12px;font-weight:600;color:#78350F;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Pending Fees</p>
+                <p id="kpi-fees" style="font-family:'Hanken Grotesk',sans-serif;font-size:28px;font-weight:800;color:#F59E0B;">₹0</p>
+              </div>
+              <div style="width:44px;height:44px;background:#FEF3C7;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                <span class="material-symbols-outlined" style="color:#F59E0B;font-size:22px;">payments</span>
+              </div>
+            </div>
+            <p style="font-size:12px;color:#64748B;">Total outstanding balance</p>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="openAddStudentModal()">
+            <span class="material-symbols-outlined">person_add</span> Add Student
+          </button>
+          <button class="btn btn-secondary" onclick="showView('attendance')">
+            <span class="material-symbols-outlined">fact_check</span> Mark Attendance
+          </button>
+          <button class="btn btn-outline" onclick="openPaymentModal()">
+            <span class="material-symbols-outlined">payment</span> Record Payment
+          </button>
+        </div>
+
+        <!-- Charts + Recent -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+          <!-- Attendance Trend -->
+          <div class="kpi-card">
+            <h3 style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;color:#0F172A;font-size:15px;margin-bottom:16px;">Attendance Trend (Last 7 Days)</h3>
+            <div id="attendance-chart" style="display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+          <!-- Fee Chart -->
+          <div class="kpi-card">
+            <h3 style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;color:#0F172A;font-size:15px;margin-bottom:16px;">Fee Collection Summary</h3>
+            <div style="display:flex;align-items:center;gap:24px;">
+              <div class="donut-ring" id="donut-container">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="45" fill="none" stroke="#E2E8F0" stroke-width="18"/>
+                  <circle id="donut-paid" cx="60" cy="60" r="45" fill="none" stroke="#10B981" stroke-width="18" stroke-dasharray="0 283" stroke-linecap="round"/>
+                  <circle id="donut-pending" cx="60" cy="60" r="45" fill="none" stroke="#F59E0B" stroke-width="18" stroke-dasharray="0 283" stroke-linecap="round" style="display:none"/>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                  <span id="donut-pct" style="font-family:'Hanken Grotesk',sans-serif;font-size:18px;font-weight:800;color:#0F172A;">0%</span>
+                  <span style="font-size:10px;color:#64748B;">Paid</span>
+                </div>
+              </div>
+              <div>
+                <div style="margin-bottom:10px;">
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                    <div style="width:10px;height:10px;border-radius:2px;background:#10B981;"></div>
+                    <span style="font-size:12px;color:#475569;">Collected</span>
+                  </div>
+                  <p id="fee-collected" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:#0F172A;">₹0</p>
+                </div>
+                <div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+                    <div style="width:10px;height:10px;border-radius:2px;background:#F59E0B;"></div>
+                    <span style="font-size:12px;color:#475569;">Pending</span>
+                  </div>
+                  <p id="fee-pending-dash" style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:#0F172A;">₹0</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="kpi-card">
+          <h3 style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;color:#0F172A;font-size:15px;margin-bottom:14px;">Recent Activity</h3>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Type</th>
+                  <th>Student</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="recent-activity-body">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== STUDENTS ===== -->
+      <div id="view-students" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+          <h2 style="font-family:'Hanken Grotesk',sans-serif;font-size:20px;font-weight:700;color:#0F172A;">Students</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <div class="search-wrap">
+              <span class="material-symbols-outlined">search</span>
+              <input type="text" id="student-search" class="form-input" placeholder="Search students..." oninput="renderStudentsTable()" style="width:220px;" />
+            </div>
+            <select id="student-course-filter" class="form-input" onchange="renderStudentsTable()" style="width:140px;">
+              <option value="">All Courses</option>
+              <option>BCA</option><option>BBA</option><option>B.Com</option>
+              <option>BSc</option><option>BE</option><option>MBA</option><option>MCA</option>
+            </select>
+            <button class="btn btn-primary" onclick="openAddStudentModal()">
+              <span class="material-symbols-outlined">person_add</span> Add Student
+            </button>
+            <button class="btn btn-outline" onclick="exportStudentsCSV()">
+              <span class="material-symbols-outlined">download</span> Export CSV
+            </button>
+          </div>
+        </div>
+        <div class="kpi-card" style="padding:0;overflow:hidden;">
+          <div style="overflow-x:auto;">
+            <table class="data-table" id="students-table">
+              <thead>
+                <tr>
+                  <th>Roll No</th>
+                  <th>Full Name</th>
+                  <th>Course</th>
+                  <th>Phone</th>
+                  <th>Email</th>
+                  <th>Attendance %</th>
+                  <th>Fee Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="students-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ATTENDANCE ===== -->
+      <div id="view-attendance" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+          <h2 style="font-family:'Hanken Grotesk',sans-serif;font-size:20px;font-weight:700;color:#0F172A;">Attendance Recording</h2>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <input type="date" id="att-date" class="form-input" style="width:160px;" onchange="renderAttendanceView()" />
+            <select id="att-course-filter" class="form-input" onchange="renderAttendanceView()" style="width:130px;">
+              <option value="">All Courses</option>
+              <option>BCA</option><option>BBA</option><option>B.Com</option>
+              <option>BSc</option><option>BE</option><option>MBA</option><option>MCA</option>
+            </select>
+            <div class="search-wrap">
+              <span class="material-symbols-outlined">search</span>
+              <input type="text" id="att-search" class="form-input" placeholder="Search..." oninput="renderAttendanceView()" style="width:170px;" />
+            </div>
+            <button class="btn btn-outline" onclick="toggleCalendarView()" id="cal-toggle-btn">
+              <span class="material-symbols-outlined">calendar_month</span> Calendar View
+            </button>
+          </div>
+        </div>
+
+        <!-- Bulk Actions -->
+        <div style="display:flex;gap:10px;margin-bottom:16px;" id="att-bulk-actions">
+          <button class="btn btn-outline" onclick="markAllAttendance('present')">
+            <span class="material-symbols-outlined">check_circle</span> Mark All Present
+          </button>
+          <button class="btn btn-outline" onclick="markAllAttendance('absent')">
+            <span class="material-symbols-outlined">cancel</span> Mark All Absent
+          </button>
+          <button class="btn btn-secondary" onclick="saveAttendanceRecord()" id="save-att-btn">
+            <span class="material-symbols-outlined">save</span> Save Attendance
+          </button>
+        </div>
+
+        <!-- Two panel layout -->
+        <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;" id="att-main-layout">
+          <!-- Student List -->
+          <div class="kpi-card" style="padding:0;overflow:hidden;">
+            <div style="padding:14px 16px;border-bottom:1px solid #F1F5F9;font-weight:600;font-size:14px;color:#0F172A;">
+              Student Attendance List
+            </div>
+            <div id="att-student-list" style="overflow-y:auto;max-height:60vh;"></div>
+          </div>
+          <!-- Summary Panel -->
+          <div>
+            <div class="kpi-card" style="margin-bottom:16px;">
+              <h3 style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:15px;color:#0F172A;margin-bottom:14px;">Today's Summary</h3>
+              <div class="stat-summary">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F1F5F9;">
+                  <span style="font-size:13px;color:#64748B;">Total</span>
+                  <span id="att-sum-total" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#0F172A;">0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F1F5F9;">
+                  <span style="font-size:13px;color:#065F46;">Present</span>
+                  <span id="att-sum-present" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#10B981;">0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F1F5F9;">
+                  <span style="font-size:13px;color:#991B1B;">Absent</span>
+                  <span id="att-sum-absent" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#EF4444;">0</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #F1F5F9;">
+                  <span style="font-size:13px;color:#92400E;">Late</span>
+                  <span id="att-sum-late" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#F59E0B;">0</span>
+                </div>
+                <div style="padding:8px 0;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <span style="font-size:13px;color:#64748B;">Attendance %</span>
+                    <span id="att-sum-pct" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#0F172A;">0%</span>
+                  </div>
+                  <div class="progress-bar">
+                    <div id="att-sum-bar" class="progress-fill" style="background:#10B981;width:0%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="kpi-card">
+              <h3 style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:14px;color:#0F172A;margin-bottom:10px;">Legend</h3>
+              <div style="display:flex;flex-direction:column;gap:7px;font-size:12px;">
+                <div style="display:flex;align-items:center;gap:8px;"><span class="badge badge-emerald">P</span> Present</div>
+                <div style="display:flex;align-items:center;gap:8px;"><span class="badge badge-rose">A</span> Absent</div>
+                <div style="display:flex;align-items:center;gap:8px;"><span class="badge badge-amber">L</span> Late</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar View (hidden by default) -->
+        <div id="att-calendar-view" style="display:none;margin-top:20px;">
+          <div class="kpi-card">
+            <h3 style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:15px;color:#0F172A;margin-bottom:16px;">Monthly Attendance Calendar</h3>
+            <div id="calendar-grid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== FEES ===== -->
+      <div id="view-fees" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+          <h2 style="font-family:'Hanken Grotesk',sans-serif;font-size:20px;font-weight:700;color:#0F172A;">Fee Management</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <div class="search-wrap">
+              <span class="material-symbols-outlined">search</span>
+              <input type="text" id="fee-search" class="form-input" placeholder="Search student..." oninput="renderFeesTable()" style="width:200px;" />
+            </div>
+            <select id="fee-status-filter" class="form-input" onchange="renderFeesTable()" style="width:130px;">
+              <option value="">All Status</option>
+              <option>Paid</option><option>Partial</option><option>Pending</option>
+            </select>
+            <select id="fee-course-filter" class="form-input" onchange="renderFeesTable()" style="width:130px;">
+              <option value="">All Courses</option>
+              <option>BCA</option><option>BBA</option><option>B.Com</option>
+              <option>BSc</option><option>BE</option><option>MBA</option><option>MCA</option>
+            </select>
+            <button class="btn btn-primary" onclick="openPaymentModal()">
+              <span class="material-symbols-outlined">add_card</span> Record Payment
+            </button>
+          </div>
+        </div>
+
+        <!-- Fee Structure Banner -->
+        <div class="kpi-card" style="margin-bottom:20px;background:#F0FDF4;border:1px solid #A7F3D0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleFeeStructure()">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="material-symbols-outlined" style="color:#10B981;">info</span>
+              <span style="font-weight:600;font-size:14px;color:#065F46;">Fee Structure (Annual)</span>
+            </div>
+            <span class="material-symbols-outlined" id="fee-structure-chevron" style="color:#10B981;">expand_more</span>
+          </div>
+          <div id="fee-structure-panel" style="max-height:0;opacity:0;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-top:14px;">
+              <div style="background:#fff;border-radius:6px;padding:10px;text-align:center;border:1px solid #A7F3D0;">
+                <div style="font-size:12px;font-weight:700;color:#065F46;margin-bottom:3px;">BCA</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#0F172A;">₹45,000</div>
+              </div>
+              <div style="background:#fff;border-radius:6px;padding:10px;text-align:center;border:1px solid #A7F3D0;">
+                <div style="font-size:12px;font-weight:700;color:#065F46;margin-bottom:3px;">BBA</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#0F172A;">₹40,000</div>
+              </div>
+              <div style="background:#fff;border-radius:6px;padding:10px;text-align:center;border:1px solid #A7F3D0;">
+                <div style="font-size:12px;font-weight:700;color:#065F46;margin-bottom:3px;">B.Com</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#0F172A;">₹35,000</div>
+              </div>
+              <div style="background:#fff;border-radius:6px;padding:10px;text-align:center;border:1px solid #A7F3D0;">
+                <div style="font-size:12px;font-weight:700;color:#065F46;margin-bottom:3px;">BSc</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#0F172A;">₹38,000</div>
+              </div>
+              <div style="background:#fff;border-radius:6px;padding:10px;text-align:center;border:1px solid #A7F3D0;">
+                <div style="font-size:12px;font-weight:700;color:#065F46;margin-bottom:3px;">BE</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#0F172A;">₹85,000</div>
+              </div>
+              <div style="background:#fff;border-radius:6px;padding:10px;text-align:center;border:1px solid #A7F3D0;">
+                <div style="font-size:12px;font-weight:700;color:#065F46;margin-bottom:3px;">MBA</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#0F172A;">₹65,000</div>
+              </div>
+              <div style="background:#fff;border-radius:6px;padding:10px;text-align:center;border:1px solid #A7F3D0;">
+                <div style="font-size:12px;font-weight:700;color:#065F46;margin-bottom:3px;">MCA</div>
+                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:#0F172A;">₹55,000</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-card" style="padding:0;overflow:hidden;">
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Roll No</th>
+                  <th>Student Name</th>
+                  <th>Course</th>
+                  <th>Total Fee</th>
+                  <th>Paid</th>
+                  <th>Pending</th>
+                  <th>Last Payment</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="fees-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== REPORTS ===== -->
+      <div id="view-reports" style="display:none;">
+        <div style="margin-bottom:20px;">
+          <h2 style="font-family:'Hanken Grotesk',sans-serif;font-size:20px;font-weight:700;color:#0F172A;">Reports & Analytics</h2>
+        </div>
+        <div style="display:grid;gap:20px;">
+          <!-- Attendance Report -->
+          <div class="report-card">
+            <div class="report-card-header">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;background:#EFF6FF;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                  <span class="material-symbols-outlined" style="color:#2563EB;font-size:20px;">fact_check</span>
+                </div>
+                <div>
+                  <h3 style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:15px;color:#0F172A;">Attendance Report</h3>
+                  <p style="font-size:12px;color:#64748B;">By course and date range</p>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center;">
+                <select id="rep-att-course" class="form-input" style="width:120px;" onchange="renderAttendanceReport()">
+                  <option value="">All Courses</option>
+                  <option>BCA</option><option>BBA</option><option>B.Com</option>
+                  <option>BSc</option><option>BE</option><option>MBA</option><option>MCA</option>
+                </select>
+                <button class="btn btn-outline" onclick="exportAttendanceCSV()">
+                  <span class="material-symbols-outlined">download</span> Export CSV
+                </button>
+              </div>
+            </div>
+            <div style="padding:16px;overflow-x:auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Roll No</th><th>Name</th><th>Course</th><th>Present</th><th>Absent</th><th>Late</th><th>Attendance %</th><th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="rep-att-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Fee Collection Report -->
+          <div class="report-card">
+            <div class="report-card-header">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;background:#D1FAE5;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                  <span class="material-symbols-outlined" style="color:#10B981;font-size:20px;">payments</span>
+                </div>
+                <div>
+                  <h3 style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:15px;color:#0F172A;">Fee Collection Report</h3>
+                  <p style="font-size:12px;color:#64748B;">Monthly collection and pending dues</p>
+                </div>
+              </div>
+              <button class="btn btn-outline" onclick="exportFeeCSV()">
+                <span class="material-symbols-outlined">download</span> Export CSV
+              </button>
+            </div>
+            <div style="padding:16px;overflow-x:auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Roll No</th><th>Name</th><th>Course</th><th>Total Fee</th><th>Paid</th><th>Pending</th><th>Last Payment</th><th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="rep-fee-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Defaulter List -->
+          <div class="report-card">
+            <div class="report-card-header">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;background:#FEE2E2;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                  <span class="material-symbols-outlined" style="color:#EF4444;font-size:20px;">warning</span>
+                </div>
+                <div>
+                  <h3 style="font-family:'Hanken Grotesk',sans-serif;font-weight:700;font-size:15px;color:#0F172A;">Defaulter List</h3>
+                  <p style="font-size:12px;color:#64748B;">Attendance &lt;75% OR pending fees &gt;₹10,000</p>
+                </div>
+              </div>
+              <button class="btn btn-outline" onclick="exportDefaultersCSV()">
+                <span class="material-symbols-outlined">download</span> Export CSV
+              </button>
+            </div>
+            <div style="padding:16px;overflow-x:auto;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Roll No</th><th>Name</th><th>Course</th><th>Attendance %</th><th>Pending Fees</th><th>Reason</th>
+                  </tr>
+                </thead>
+                <tbody id="rep-defaulter-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== FACULTY APPROVALS VIEW (ADMIN ONLY) ==================== -->
+      <div id="view-approvals" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <div>
+            <h2 style="font-family:'Hanken Grotesk',sans-serif;font-size:22px;font-weight:700;color:#0F172A;">Faculty Approval Requests</h2>
+            <p style="color:#64748B;font-size:14px;margin-top:2px;">Review new faculty registrations. Access to the portal is only granted after your explicit approval.</p>
+          </div>
+          <button class="btn btn-primary" onclick="renderApprovalsView()">
+            <span class="material-symbols-outlined">refresh</span> Refresh List
+          </button>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+          <div class="kpi-card" style="border-left:4px solid #F59E0B;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;">Pending Approval</span>
+              <span class="material-symbols-outlined" style="color:#F59E0B;">hourglass_top</span>
+            </div>
+            <div id="approvals-count-pending" style="font-family:'Hanken Grotesk',sans-serif;font-size:28px;font-weight:700;color:#0F172A;">0</div>
+            <p style="font-size:12px;color:#64748B;margin-top:4px;">Awaiting administrator action</p>
+          </div>
+
+          <div class="kpi-card" style="border-left:4px solid #10B981;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;">Approved Faculty</span>
+              <span class="material-symbols-outlined" style="color:#10B981;">verified</span>
+            </div>
+            <div id="approvals-count-approved" style="font-family:'Hanken Grotesk',sans-serif;font-size:28px;font-weight:700;color:#10B981;">0</div>
+            <p style="font-size:12px;color:#64748B;margin-top:4px;">Active portal users</p>
+          </div>
+
+          <div class="kpi-card" style="border-left:4px solid #EF4444;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;">Rejected / Blocked</span>
+              <span class="material-symbols-outlined" style="color:#EF4444;">block</span>
+            </div>
+            <div id="approvals-count-rejected" style="font-family:'Hanken Grotesk',sans-serif;font-size:28px;font-weight:700;color:#EF4444;">0</div>
+            <p style="font-size:12px;color:#64748B;margin-top:4px;">Disapproved applications</p>
+          </div>
+        </div>
+
+        <!-- Pending Requests Panel -->
+        <div style="background:#fff;border:1px solid #F1F5F9;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+          <div style="padding:16px 20px;border-bottom:1px solid #F1F5F9;background:#FAFAFD;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="material-symbols-outlined" style="color:#2563EB;">pending_actions</span>
+              <span style="font-weight:700;color:#0F172A;font-size:15px;">Pending Verification &amp; Approval Requests</span>
+            </div>
+            <span id="pending-counter-label" class="badge badge-amber">0 requests</span>
+          </div>
+          <div id="approvals-list" style="padding:16px;display:flex;flex-direction:column;gap:12px;min-height:100px;">
+            <div style="text-align:center;color:#94A3B8;padding:30px;">Loading requests...</div>
+          </div>
+        </div>
+
+        <!-- All Faculty Audit Table -->
+        <div style="background:#fff;border:1px solid #F1F5F9;border-radius:8px;overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-weight:700;color:#0F172A;font-size:15px;">All Registered Faculty Records</div>
+            <span style="font-size:12.5px;color:#64748B;">Synced with Firebase Firestore</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Faculty Name</th>
+                  <th>Official Email</th>
+                  <th>Department</th>
+                  <th>Registered On</th>
+                  <th>Email Status</th>
+                  <th>Account Status</th>
+                  <th>Admin Action</th>
+                </tr>
+              </thead>
+              <tbody id="all-faculty-tbody">
+                <tr><td colspan="7" style="text-align:center;color:#94A3B8;padding:24px;">Loading faculty data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ========== MODALS ========== -->
+
+<!-- Add/Edit Student Modal -->
+<div class="modal-overlay" id="modal-add-student">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-header">
+      <h3 id="modal-student-title" style="font-family:'Hanken Grotesk',sans-serif;font-size:17px;font-weight:700;color:#0F172A;">Add Student</h3>
+      <button onclick="closeModal('modal-add-student')" class="btn-ghost btn" style="padding:4px;">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-student-id" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group">
+          <label class="form-label">Roll Number</label>
+          <input type="text" id="s-roll" class="form-input" placeholder="e.g. BCA2024001" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input type="text" id="s-name" class="form-input" placeholder="Student full name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Course *</label>
+          <select id="s-course" class="form-input">
+            <option value="">Select course</option>
+            <option>BCA</option><option>BBA</option><option>B.Com</option>
+            <option>BSc</option><option>BE</option><option>MBA</option><option>MCA</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Semester</label>
+          <select id="s-semester" class="form-input">
+            <option>1</option><option>2</option><option>3</option><option>4</option>
+            <option>5</option><option>6</option><option>7</option><option>8</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" id="s-phone" class="form-input" placeholder="10-digit phone" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" id="s-email" class="form-input" placeholder="student@email.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Guardian Name</label>
+          <input type="text" id="s-guardian" class="form-input" placeholder="Parent/Guardian name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Guardian Phone</label>
+          <input type="tel" id="s-guardian-phone" class="form-input" placeholder="Guardian phone" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Address</label>
+          <input type="text" id="s-address" class="form-input" placeholder="Full address" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Admission Date</label>
+          <input type="date" id="s-admission" class="form-input" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-add-student')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStudent()">
+        <span class="material-symbols-outlined">save</span> Save Student
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Record Payment Modal -->
+<div class="modal-overlay" id="modal-record-payment">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 style="font-family:'Hanken Grotesk',sans-serif;font-size:17px;font-weight:700;color:#0F172A;">Record Payment</h3>
+      <button onclick="closeModal('modal-record-payment')" class="btn-ghost btn" style="padding:4px;">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Select Student *</label>
+        <select id="pay-student" class="form-input" onchange="onPayStudentChange()">
+          <option value="">Choose a student...</option>
+        </select>
+      </div>
+      <div id="pay-balance-info" style="display:none;padding:10px 14px;background:#FEF3C7;border-radius:6px;border:1px solid #FDE68A;margin-bottom:14px;font-size:13px;color:#92400E;">
+        Outstanding balance: <strong id="pay-balance-amount"></strong>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group">
+          <label class="form-label">Amount (₹) *</label>
+          <input type="number" id="pay-amount" class="form-input" placeholder="0" min="1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Mode</label>
+          <select id="pay-mode" class="form-input">
+            <option>Cash</option><option>Online</option><option>DD</option><option>Cheque</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Transaction ID</label>
+          <input type="text" id="pay-txn" class="form-input" placeholder="TXN123456" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Date</label>
+          <input type="date" id="pay-date" class="form-input" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Remarks</label>
+          <input type="text" id="pay-remarks" class="form-input" placeholder="Optional remarks" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-record-payment')">Cancel</button>
+      <button class="btn btn-secondary" onclick="recordPayment()">
+        <span class="material-symbols-outlined">payment</span> Record Payment
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="modal-confirm-delete">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-header">
+      <h3 style="font-family:'Hanken Grotesk',sans-serif;font-size:17px;font-weight:700;color:#EF4444;">Confirm Delete</h3>
+      <button onclick="closeModal('modal-confirm-delete')" class="btn-ghost btn" style="padding:4px;">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:14px;color:#334155;">Are you sure you want to delete student <strong id="delete-student-name"></strong>? This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-confirm-delete')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">
+        <span class="material-symbols-outlined">delete</span> Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== DRAWER: Student Detail ========== -->
+<div id="drawer-overlay" onclick="closeDrawer()"></div>
+<div id="drawer-student-detail">
+  <div style="padding:20px 24px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <h3 style="font-family:'Hanken Grotesk',sans-serif;font-size:17px;font-weight:700;color:#0F172A;">Student Profile</h3>
+    <button onclick="closeDrawer()" class="btn-ghost btn" style="padding:4px;">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+  <div id="drawer-content" style="flex:1;overflow-y:auto;padding:24px;"></div>
+</div>
+
+<!-- ========== TOAST CONTAINER ========== -->
+<div id="toast-container"></div>
+
+<!-- ========== SETTINGS PLACEHOLDER ========== -->
+<div class="modal-overlay" id="modal-settings">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-header">
+      <h3 style="font-family:'Hanken Grotesk',sans-serif;font-size:17px;font-weight:700;color:#0F172A;">Settings</h3>
+      <button onclick="closeModal('modal-settings')" class="btn-ghost btn" style="padding:4px;">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="form-group">
+          <label class="form-label">Institution Name</label>
+          <input type="text" class="form-input" value="ManageAll Institute" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Academic Year</label>
+          <input type="text" class="form-input" value="2024-25" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reset Sample Data</label>
+          <button class="btn btn-danger" onclick="resetSampleData()">
+            <span class="material-symbols-outlined">restart_alt</span> Reset & Reinitialize
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-settings')">Close</button>
+      <button class="btn btn-primary" onclick="closeModal('modal-settings');showToast('Settings saved','success')">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== JAVASCRIPT ========== -->
+<script>
+// ============================================================
+//  FIREBASE CONFIGURATION
+//  Paste your Firebase Web App configuration from:
+//  Firebase Console -> Project Settings -> General -> Your apps
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDEV-UB7feRgnBNm8lzoB4MrYLlyL59k1s",
+  authDomain: "manageall-9750a.firebaseapp.com",
+  projectId: "manageall-9750a",
+  storageBucket: "manageall-9750a.firebasestorage.app",
+  messagingSenderId: "541461529175",
+  appId: "1:541461529175:web:87f131481f6e2ff17a1912"
+};
+
+let firebaseInitialized = false;
+let auth = null;
+let db = null;
+
+try {
+  if (typeof firebase !== 'undefined' && firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+    firebase.initializeApp(firebaseConfig);
+    auth = firebase.auth();
+    db = firebase.firestore();
+    firebaseInitialized = true;
+    console.log("✅ Firebase initialized successfully");
+  }
+} catch (e) {
+  console.warn("Firebase initialization notice:", e);
+}
+
+// ============================================================
+//  CONSTANTS & CONFIG
+// ============================================================
+const FEE_STRUCTURE = {
+  'BCA': 45000, 'BBA': 40000, 'B.Com': 35000,
+  'BSc': 38000, 'BE': 85000, 'MBA': 65000, 'MCA': 55000
+};
+
+const HARDCODED_ADMIN = { 
+  uid: 'admin_master',
+  email: 'admin@manageall.edu', 
+  password: 'admin123', 
+  name: 'System Administrator', 
+  role: 'admin',
+  status: 'approved' 
+};
+
+let currentUser = null;
+let studentToDelete = null;
+let attendanceState = {}; // { studentId: 'present'|'absent'|'late' }
+let calendarViewOpen = false;
+
+// ============================================================
+//  UTILS
+// ============================================================
+function formatCurrency(n) {
+  return '₹' + Number(n).toLocaleString('en-IN');
+}
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+}
+function formatDateTime(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-IN', { day:'2-digit', month:'short' }) + ' ' +
+         dt.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+}
+function todayString() {
+  return new Date().toISOString().split('T')[0];
+}
+function getInitials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+}
+function avatarColor(name) {
+  const colors = ['#2563EB','#10B981','#F59E0B','#8B5CF6','#EC4899','#06B6D4','#EF4444'];
+  let h = 0;
+  for (let c of (name||'')) h = (h*31 + c.charCodeAt(0)) % colors.length;
+  return colors[h];
+}
+function generateRollNo(course) {
+  const year = new Date().getFullYear();
+  const students = getStudents();
+  const courseStudents = students.filter(s => s.course === course);
+  const num = String(courseStudents.length + 1).padStart(3, '0');
+  return `${course.replace('.','').replace(' ','')}${year}${num}`;
+}
+
+// ============================================================
+//  SHOW TOAST
+// ============================================================
+function showToast(msg, type = 'success', duration = 4000) {
+  const icons = { success:'check_circle', error:'error', info:'info', warning:'warning' };
+  const colors = { success:'#10B981', error:'#EF4444', info:'#2563EB', warning:'#F59E0B' };
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span class="material-symbols-outlined" style="color:${colors[type]||'#10B981'};font-size:20px;">${icons[type]||'check_circle'}</span><span style="flex:1;">${msg}</span><span class="material-symbols-outlined" style="cursor:pointer;font-size:18px;color:#94A3B8;" onclick="this.parentElement.remove()">close</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'toastOut 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// ============================================================
+//  DATA LAYER — LocalStorage
+// ============================================================
+function getStudents() { return JSON.parse(localStorage.getItem('ma_students') || '[]'); }
+function saveStudents(arr) { localStorage.setItem('ma_students', JSON.stringify(arr)); }
+function getAttendanceData() { return JSON.parse(localStorage.getItem('ma_attendance') || '{}'); }
+function saveAttendanceData(obj) { localStorage.setItem('ma_attendance', JSON.stringify(obj)); }
+function getFeesData() { return JSON.parse(localStorage.getItem('ma_fees') || '{}'); }
+function saveFeesData(obj) { localStorage.setItem('ma_fees', JSON.stringify(obj)); }
+function getUsers() { return JSON.parse(localStorage.getItem('ma_users') || '[]'); }
+function saveUsers(arr) { localStorage.setItem('ma_users', JSON.stringify(arr)); }
+function getActivity() { return JSON.parse(localStorage.getItem('ma_activity') || '[]'); }
+function saveActivity(arr) { localStorage.setItem('ma_activity', JSON.stringify(arr.slice(0,50))); }
+
+function logActivity(type, studentName, details) {
+  const acts = getActivity();
+  acts.unshift({ time: new Date().toISOString(), type, studentName, details });
+  saveActivity(acts);
+}
+
+// ============================================================
+//  SAMPLE DATA
+// ============================================================
+function initSampleData() {
+  if (localStorage.getItem('manageall_initialized')) return;
+
+  const students = [
+    { id:'s1', roll:'BCA2024001', name:'Arjun Sharma', course:'BCA', semester:'3', phone:'9876543210', email:'arjun.sharma@student.edu', guardian:'Rajesh Sharma', guardianPhone:'9876543200', address:'12, MG Road, Bengaluru', admission:'2024-07-01' },
+    { id:'s2', roll:'BCA2024002', name:'Priya Patel', course:'BCA', semester:'3', phone:'9876543211', email:'priya.patel@student.edu', guardian:'Suresh Patel', guardianPhone:'9876543201', address:'45, Anna Nagar, Chennai', admission:'2024-07-01' },
+    { id:'s3', roll:'BCA2024003', name:'Rohit Kumar', course:'BCA', semester:'3', phone:'9876543212', email:'rohit.kumar@student.edu', guardian:'Vijay Kumar', guardianPhone:'9876543202', address:'78, Sector 15, Noida', admission:'2024-07-01' },
+    { id:'s4', roll:'BCA2024004', name:'Sneha Reddy', course:'BCA', semester:'3', phone:'9876543213', email:'sneha.reddy@student.edu', guardian:'Ramesh Reddy', guardianPhone:'9876543203', address:'33, Banjara Hills, Hyderabad', admission:'2024-07-01' },
+    { id:'s5', roll:'BCA2024005', name:'Aditya Joshi', course:'BCA', semester:'3', phone:'9876543214', email:'aditya.joshi@student.edu', guardian:'Mohan Joshi', guardianPhone:'9876543204', address:'67, Shivaji Nagar, Pune', admission:'2024-07-01' },
+    { id:'s6', roll:'BBA2024001', name:'Kavya Nair', course:'BBA', semester:'2', phone:'9876543215', email:'kavya.nair@student.edu', guardian:'Sunil Nair', guardianPhone:'9876543205', address:'22, MG Road, Kochi', admission:'2024-07-15' },
+    { id:'s7', roll:'BBA2024002', name:'Vikram Singh', course:'BBA', semester:'2', phone:'9876543216', email:'vikram.singh@student.edu', guardian:'Gurpreet Singh', guardianPhone:'9876543206', address:'88, Chandigarh Sector 22', admission:'2024-07-15' },
+    { id:'s8', roll:'BBA2024003', name:'Deepika Mehta', course:'BBA', semester:'2', phone:'9876543217', email:'deepika.mehta@student.edu', guardian:'Anil Mehta', guardianPhone:'9876543207', address:'11, Juhu, Mumbai', admission:'2024-07-15' },
+    { id:'s9', roll:'BBA2024004', name:'Rahul Verma', course:'BBA', semester:'2', phone:'9876543218', email:'rahul.verma@student.edu', guardian:'Suresh Verma', guardianPhone:'9876543208', address:'55, Civil Lines, Allahabad', admission:'2024-07-15' },
+    { id:'s10', roll:'MBA2024001', name:'Anjali Gupta', course:'MBA', semester:'1', phone:'9876543219', email:'anjali.gupta@student.edu', guardian:'Ravi Gupta', guardianPhone:'9876543209', address:'99, Lal Bagh Road, Bengaluru', admission:'2024-08-01' },
+    { id:'s11', roll:'MBA2024002', name:'Karthik Iyer', course:'MBA', semester:'1', phone:'9876543220', email:'karthik.iyer@student.edu', guardian:'Krishnan Iyer', guardianPhone:'9876543210', address:'44, T Nagar, Chennai', admission:'2024-08-01' },
+    { id:'s12', roll:'MBA2024003', name:'Meera Pillai', course:'MBA', semester:'1', phone:'9876543221', email:'meera.pillai@student.edu', guardian:'Thomas Pillai', guardianPhone:'9876543211', address:'77, Vyttila, Ernakulam', admission:'2024-08-01' },
+    { id:'s13', roll:'BE2024001', name:'Nikhil Rao', course:'BE', semester:'4', phone:'9876543222', email:'nikhil.rao@student.edu', guardian:'Prasad Rao', guardianPhone:'9876543212', address:'66, Koramangala, Bengaluru', admission:'2024-07-01' },
+    { id:'s14', roll:'BE2024002', name:'Pooja Desai', course:'BE', semester:'4', phone:'9876543223', email:'pooja.desai@student.edu', guardian:'Hemant Desai', guardianPhone:'9876543213', address:'33, Satellite, Ahmedabad', admission:'2024-07-01' },
+    { id:'s15', roll:'MCA2024001', name:'Suresh Krishnan', course:'MCA', semester:'2', phone:'9876543224', email:'suresh.krishnan@student.edu', guardian:'Venkat Krishnan', guardianPhone:'9876543214', address:'55, Velachery, Chennai', admission:'2024-07-15' },
+  ];
+  saveStudents(students);
+
+  // Attendance — last 30 days
+  const attData = {};
+  const today = new Date();
+  const statuses = ['present','present','present','present','absent','late','present'];
+  for (const s of students) {
+    attData[s.id] = {};
+    for (let d = 29; d >= 0; d--) {
+      const dt = new Date(today);
+      dt.setDate(dt.getDate() - d);
+      const day = dt.getDay();
+      if (day === 0 || day === 6) continue; // skip weekends
+      const ds = dt.toISOString().split('T')[0];
+      const rnd = Math.random();
+      let st;
+      if (s.id === 's3' || s.id === 's9') { // low attenders
+        st = rnd < 0.4 ? 'present' : (rnd < 0.6 ? 'late' : 'absent');
+      } else {
+        st = statuses[Math.floor(Math.random() * statuses.length)];
+      }
+      attData[s.id][ds] = st;
+    }
+  }
+  saveAttendanceData(attData);
+
+  // Fees
+  const feeData = {};
+  const payments = [
+    { s:'s1', paid:45000, hist:[{ date:'2024-07-05', amount:45000, mode:'Online', txn:'TXN001', remarks:'Full payment' }] },
+    { s:'s2', paid:22500, hist:[{ date:'2024-07-10', amount:22500, mode:'Cash', txn:'', remarks:'First installment' }] },
+    { s:'s3', paid:0, hist:[] },
+    { s:'s4', paid:45000, hist:[{ date:'2024-07-02', amount:45000, mode:'DD', txn:'DD12345', remarks:'' }] },
+    { s:'s5', paid:15000, hist:[{ date:'2024-08-01', amount:15000, mode:'Online', txn:'TXN002', remarks:'Partial' }] },
+    { s:'s6', paid:40000, hist:[{ date:'2024-07-20', amount:40000, mode:'Online', txn:'TXN003', remarks:'Full year fee' }] },
+    { s:'s7', paid:20000, hist:[{ date:'2024-07-25', amount:20000, mode:'Cheque', txn:'CHQ001', remarks:'First half' }] },
+    { s:'s8', paid:0, hist:[] },
+    { s:'s9', paid:40000, hist:[{ date:'2024-07-18', amount:40000, mode:'Cash', txn:'', remarks:'Paid in full' }] },
+    { s:'s10', paid:65000, hist:[{ date:'2024-08-05', amount:65000, mode:'Online', txn:'TXN004', remarks:'Full fee' }] },
+    { s:'s11', paid:30000, hist:[{ date:'2024-08-10', amount:30000, mode:'Online', txn:'TXN005', remarks:'First installment' }] },
+    { s:'s12', paid:0, hist:[] },
+    { s:'s13', paid:85000, hist:[{ date:'2024-07-03', amount:85000, mode:'DD', txn:'DD12346', remarks:'Full amount' }] },
+    { s:'s14', paid:42500, hist:[{ date:'2024-07-30', amount:42500, mode:'Online', txn:'TXN006', remarks:'50% paid' }] },
+    { s:'s15', paid:55000, hist:[{ date:'2024-08-01', amount:55000, mode:'Online', txn:'TXN007', remarks:'' }] },
+  ];
+  for (const p of payments) {
+    const st = students.find(x => x.id === p.s);
+    if (!st) continue;
+    const total = FEE_STRUCTURE[st.course] || 0;
+    feeData[p.s] = { total, paid: p.paid, history: p.hist };
+  }
+  saveFeesData(feeData);
+
+  // Activity log
+  const acts = [
+    { time: new Date(Date.now()-3600000).toISOString(), type:'attendance', studentName:'Arjun Sharma', details:'Marked Present' },
+    { time: new Date(Date.now()-7200000).toISOString(), type:'payment', studentName:'Priya Patel', details:'Payment of ₹22,500 recorded' },
+    { time: new Date(Date.now()-10800000).toISOString(), type:'attendance', studentName:'Rohit Kumar', details:'Marked Absent' },
+    { time: new Date(Date.now()-14400000).toISOString(), type:'student', studentName:'Suresh Krishnan', details:'Student enrolled' },
+    { time: new Date(Date.now()-18000000).toISOString(), type:'payment', studentName:'Anjali Gupta', details:'Full fee payment ₹65,000' },
+  ];
+  saveActivity(acts);
+
+  localStorage.setItem('manageall_initialized', '1');
+}
+
+function resetSampleData() {
+  localStorage.removeItem('manageall_initialized');
+  localStorage.removeItem('ma_students');
+  localStorage.removeItem('ma_attendance');
+  localStorage.removeItem('ma_fees');
+  localStorage.removeItem('ma_activity');
+  initSampleData();
+  renderAll();
+  showToast('Sample data reset successfully', 'success');
+  closeModal('modal-settings');
+}
+
+// ============================================================
+//  FACULTY REGISTRY HELPERS (Firestore + LocalStorage Mirror)
+// ============================================================
+function getLocalFaculty() {
+  return JSON.parse(localStorage.getItem('ma_faculty_registry') || '[]');
+}
+function saveLocalFaculty(arr) {
+  localStorage.setItem('ma_faculty_registry', JSON.stringify(arr));
+}
+
+function fillDemoAdmin() {
+  document.getElementById('login-email').value = 'admin@manageall.edu';
+  document.getElementById('login-password').value = 'admin123';
+  showToast('Filled demo admin credentials', 'info');
+}
+
+function handleForgotPassword() {
+  const email = prompt('Enter your registered email address to receive a password reset link:');
+  if (!email) return;
+  if (firebaseInitialized && auth) {
+    auth.sendPasswordResetEmail(email.trim())
+      .then(() => showToast('Password reset email dispatched to ' + email, 'success'))
+      .catch(e => showToast('Reset failed: ' + e.message, 'error'));
+  } else {
+    showToast('Password reset link sent to ' + email + ' (Demo)', 'info');
+  }
+}
+
+function showLoginStatus(type, title, message, actionHtml = '') {
+  const colors = {
+    info: { bg: '#EFF6FF', border: '#BFDBFE', text: '#1E40AF', icon: 'info' },
+    success: { bg: '#F0FDF4', border: '#A7F3D0', text: '#065F46', icon: 'check_circle' },
+    warning: { bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', icon: 'warning' },
+    error: { bg: '#FEF2F2', border: '#FECACA', text: '#991B1B', icon: 'error' }
+  };
+  const c = colors[type] || colors.info;
+  const box = document.getElementById('login-status-box');
+  if (!box) return;
+  box.style.display = 'block';
+  box.style.background = c.bg;
+  box.style.border = '1px solid ' + c.border;
+  box.style.borderRadius = '8px';
+  box.style.padding = '12px 14px';
+  box.innerHTML = `
+    <div style="display:flex;gap:10px;align-items:flex-start;">
+      <span class="material-symbols-outlined" style="color:${c.text};font-size:20px;flex-shrink:0;margin-top:1px;">${c.icon}</span>
+      <div style="flex:1;">
+        <div style="font-weight:700;color:${c.text};font-size:13.5px;margin-bottom:3px;">${title}</div>
+        <div style="font-size:12.5px;color:#334155;line-height:1.45;">${message}</div>
+        ${actionHtml ? `<div style="margin-top:8px;">${actionHtml}</div>` : ''}
+      </div>
+      <button onclick="document.getElementById('login-status-box').style.display='none'" style="background:none;border:none;cursor:pointer;color:#94A3B8;font-size:18px;">×</button>
+    </div>
+  `;
+}
+
+async function resendVerificationLink(email, pass) {
+  if (!firebaseInitialized) {
+    showToast('Demo mode: email simulated.', 'info');
+    return;
+  }
+  try {
+    const cred = await auth.signInWithEmailAndPassword(email, pass);
+    await cred.user.sendEmailVerification();
+    await auth.signOut();
+    showToast('Verification email resent! Check your Gmail inbox.', 'success');
+  } catch(e) {
+    showToast('Could not resend: ' + e.message, 'error');
+  }
+}
+
+function simulateEmailVerify(email) {
+  const registry = getLocalFaculty();
+  const f = registry.find(x => x.email.toLowerCase() === email.toLowerCase());
+  if (f) {
+    f.emailVerified = true;
+    f.status = 'email_verified';
+    saveLocalFaculty(registry);
+    showLoginStatus('info', '✅ Email Verified!', 'Your email has been verified. Your application is now in the Admin Approval queue. Please log in with admin@manageall.edu to approve this faculty account.');
+    showToast('Email verified successfully! Awaiting Admin Approval.', 'success');
+  }
+}
+
+// ============================================================
+//  AUTH — LOGIN & REGISTRATION
+// ============================================================
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-password').value;
+  if (!email || !pass) { showToast('Please enter both email and password', 'error'); return; }
+
+  const btn = document.getElementById('btn-login-submit');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite;font-size:18px;">refresh</span> Authenticating...';
+
+  // 1. Direct Hardcoded Master Admin Check
+  if (email.toLowerCase() === HARDCODED_ADMIN.email.toLowerCase() && pass === HARDCODED_ADMIN.password) {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    loginSuccess(HARDCODED_ADMIN);
+    return;
+  }
+
+  // 2. Real Firebase Authentication
+  if (firebaseInitialized && auth && db) {
+    try {
+      const cred = await auth.signInWithEmailAndPassword(email, pass);
+      const user = cred.user;
+
+      // Check if email has been verified on Gmail
+      if (!user.emailVerified) {
+        await auth.signOut();
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        showLoginStatus('warning', '⚠️ Email Not Verified on Gmail', 
+          `Firebase sent a verification link to <strong>${email}</strong>. Please open your Gmail, click the link to confirm your account, and then try logging in.`,
+          `<button class="btn btn-secondary" style="padding:6px 12px;font-size:12px;" onclick="resendVerificationLink('${email}','${pass}')"><span class="material-symbols-outlined" style="font-size:14px;">send</span> Resend Verification Email</button>`
+        );
+        return;
+      }
+
+      // Email IS verified. Now check Firestore approval record
+      const doc = await db.collection('users').doc(user.uid).get();
+      if (!doc.exists) {
+        // User created directly in Auth or doc missing
+        await auth.signOut();
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        showLoginStatus('error', 'Account Profile Not Found', 'No faculty record found in Firestore. Please register again.');
+        return;
+      }
+
+      const profile = doc.data();
+
+      // Check account status
+      if (profile.status === 'pending_verification') {
+        // Update to email_verified since user.emailVerified is true
+        await db.collection('users').doc(user.uid).update({ status: 'email_verified', emailVerified: true });
+        await auth.signOut();
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        showLoginStatus('info', '✅ Email Verified — Awaiting Admin Approval', 
+          `Hello ${profile.name}! Your email is verified. Your registration request has reached the administrator. Access to the portal will unlock as soon as the administrator approves your account.`
+        );
+        return;
+      }
+
+      if (profile.status === 'email_verified' || profile.status === 'pending_approval') {
+        await auth.signOut();
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        showLoginStatus('warning', '⏳ Pending Administrator Approval', 
+          `Hello ${profile.name}. Your email is verified, but your faculty account is currently pending administrator approval. Please wait for an administrator to activate your account.`
+        );
+        return;
+      }
+
+      if (profile.status === 'rejected') {
+        await auth.signOut();
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        showLoginStatus('error', '❌ Registration Rejected', 
+          `Your faculty registration was declined by the administrator. Please contact campus administration if you believe this is an error.`
+        );
+        return;
+      }
+
+      if (profile.status === 'approved') {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        loginSuccess({
+          uid: user.uid,
+          name: profile.name,
+          email: profile.email,
+          role: profile.role || 'faculty',
+          department: profile.department
+        });
+        return;
+      }
+
+      // Default fallback
+      await auth.signOut();
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      showLoginStatus('warning', 'Account Status: ' + profile.status, 'Your account is currently not authorized to log in.');
+      return;
+
+    } catch(err) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      const msg = (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')
+        ? 'Invalid email or password.'
+        : err.code === 'auth/too-many-requests'
+        ? 'Too many failed login attempts. Please try again later.'
+        : err.message;
+      showToast(msg, 'error');
+      return;
+    }
+  }
+
+  // 3. Fallback Local Simulation Mode (when Firebase config hasn't been plugged in)
+  btn.disabled = false;
+  btn.innerHTML = originalText;
+  const registry = getLocalFaculty();
+  const fac = registry.find(f => f.email.toLowerCase() === email.toLowerCase() && f.password === pass);
+
+  if (fac) {
+    if (fac.status === 'pending_verification' && !fac.emailVerified) {
+      showLoginStatus('warning', '⚠️ Email Verification Required', 
+        `A verification email was sent to <strong>${fac.email}</strong>. Please check your Gmail.`,
+        `<button class="btn btn-primary" style="padding:6px 12px;font-size:12px;" onclick="simulateEmailVerify('${fac.email}')"><span class="material-symbols-outlined" style="font-size:14px;">mark_email_read</span> Click to Simulate Gmail Verification Link</button>`
+      );
+      return;
+    }
+    if (fac.status === 'email_verified' || fac.status === 'pending_approval') {
+      showLoginStatus('info', '⏳ Pending Administrator Approval', 
+        `Hello ${fac.name}! Your email is verified. Log in with <strong>admin@manageall.edu</strong> to review and approve this faculty request in the Approvals section.`
+      );
+      return;
+    }
+    if (fac.status === 'rejected') {
+      showLoginStatus('error', '❌ Application Rejected', 'Your registration request was rejected by the administrator.');
+      return;
+    }
+    if (fac.status === 'approved') {
+      loginSuccess(fac);
+      return;
+    }
+  }
+
+  showToast('Invalid email or password', 'error');
+}
+
+async function handleRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const dept = document.getElementById('reg-dept').value;
+  const email = document.getElementById('reg-email').value.trim();
+  const pass = document.getElementById('reg-password').value;
+  const confirm = document.getElementById('reg-confirm').value;
+
+  if (!name || !dept || !email || !pass) {
+    showToast('Please fill out all required fields', 'error');
+    return;
+  }
+  if (!email.includes('@') || !email.includes('.')) {
+    showToast('Please enter a valid email address', 'error');
+    return;
+  }
+  if (pass.length < 6) {
+    showToast('Password must be at least 6 characters', 'error');
+    return;
+  }
+  if (pass !== confirm) {
+    showToast('Passwords do not match', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-reg-submit');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined" style="animation:spin 1s linear infinite;font-size:18px;">refresh</span> Registering Faculty...';
+
+  // 1. Live Firebase Registration
+  if (firebaseInitialized && auth && db) {
+    try {
+      const cred = await auth.createUserWithEmailAndPassword(email, pass);
+      const user = cred.user;
+
+      // Send Firebase Email Verification to Gmail
+      await user.sendEmailVerification();
+
+      // Update User profile
+      await user.updateProfile({ displayName: name });
+
+      // Create Firestore User Document
+      const userData = {
+        uid: user.uid,
+        name: name,
+        email: email,
+        department: dept,
+        role: 'faculty',
+        status: 'pending_verification',
+        emailVerified: false,
+        createdAt: new Date().toISOString(),
+        approvedAt: null,
+        approvedBy: null
+      };
+
+      await db.collection('users').doc(user.uid).set(userData);
+
+      // Sign out immediately so unapproved user cannot access
+      await auth.signOut();
+
+      // Mirror to local registry as well
+      const registry = getLocalFaculty();
+      registry.push(userData);
+      saveLocalFaculty(registry);
+
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      displayRegistrationSuccess(name, email, dept);
+      showToast('Verification email sent to Gmail!', 'success');
+      return;
+
+    } catch(err) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+      const msg = err.code === 'auth/email-already-in-use'
+        ? 'This email address is already registered. Please sign in.'
+        : err.code === 'auth/weak-password'
+        ? 'Password is too weak. Please use at least 6 characters.'
+        : err.message;
+      showToast(msg, 'error');
+      return;
+    }
+  }
+
+  // 2. Local Fallback Mode (when Firebase keys are pending)
+  const registry = getLocalFaculty();
+  if (registry.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+    showToast('This email is already registered. Please sign in.', 'error');
+    return;
+  }
+
+  const newFaculty = {
+    uid: 'fac_' + Date.now(),
+    name,
+    email,
+    password: pass,
+    department: dept,
+    role: 'faculty',
+    status: 'pending_verification',
+    emailVerified: false,
+    createdAt: new Date().toISOString()
+  };
+  registry.push(newFaculty);
+  saveLocalFaculty(registry);
+
+  btn.disabled = false;
+  btn.innerHTML = originalText;
+  displayRegistrationSuccess(name, email, dept);
+  showToast('Registration submitted! Check your Gmail.', 'success');
+}
+
+function displayRegistrationSuccess(name, email, dept) {
+  const formContainer = document.getElementById('login-register-form');
+  formContainer.innerHTML = `
+    <div style="text-align:center;padding:20px 10px;">
+      <div style="width:68px;height:68px;background:#F0FDF4;border:2px solid #86EFAC;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <span class="material-symbols-outlined" style="font-size:38px;color:#10B981;">mark_email_read</span>
+      </div>
+      <h3 style="font-family:'Hanken Grotesk',sans-serif;font-size:20px;font-weight:700;color:#0F172A;margin-bottom:6px;">Verification Dispatched to Gmail!</h3>
+      <p style="color:#64748B;font-size:13.5px;line-height:1.5;margin-bottom:18px;">
+        We have transmitted a verification link to<br>
+        <strong style="color:#0F172A;font-family:'JetBrains Mono',monospace;">${email}</strong>
+      </p>
+
+      <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:14px 16px;text-align:left;margin-bottom:20px;">
+        <div style="font-weight:700;color:#0F172A;font-size:13px;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined" style="font-size:16px;color:#2563EB;">checklist</span>
+          What happens next:
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:#475569;">
+          <div>1️⃣ <strong>Open your Gmail</strong> and click the link to verify your email.</div>
+          <div>2️⃣ <strong>Admin Review:</strong> Your registration will appear in the Administrator's queue for approval.</div>
+          <div>3️⃣ <strong>Access Granted:</strong> Once approved, the login window will activate for you!</div>
+        </div>
+      </div>
+
+      <button onclick="switchLoginTab('signin'); document.getElementById('login-email').value = '${email}';" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;">
+        <span class="material-symbols-outlined">login</span> Proceed to Sign In Window
+      </button>
+    </div>
+  `;
+}
+
+function loginSuccess(user) {
+  currentUser = user;
+  localStorage.setItem('ma_session', JSON.stringify(user));
+  document.getElementById('app-login').style.display = 'none';
+  document.getElementById('app-main').style.display = 'flex';
+  document.getElementById('header-username').textContent = user.name || user.email;
+  document.getElementById('sidebar-username').textContent = user.name || user.email;
+  
+  const initials = getInitials(user.name || user.email);
+  const col = avatarColor(user.name || user.email);
+  document.getElementById('header-avatar').textContent = initials;
+  document.getElementById('header-avatar').style.background = col;
+  document.getElementById('sidebar-avatar').textContent = initials;
+  document.getElementById('sidebar-avatar').style.background = col;
+
+  // Role-based UI visibility
+  const isAdmin = (user.role === 'admin' || user.email === HARDCODED_ADMIN.email);
+  const approvalsNav = document.getElementById('nav-approvals');
+  if (approvalsNav) approvalsNav.style.display = isAdmin ? 'flex' : 'none';
+
+  const roleBadge = document.getElementById('sidebar-role-badge');
+  if (roleBadge) {
+    roleBadge.textContent = isAdmin ? 'Admin' : 'Faculty';
+    roleBadge.className = 'badge ' + (isAdmin ? 'badge-navy' : 'badge-cobalt');
+  }
+
+  initSampleData();
+  if (isAdmin) {
+    updateApprovalsBadge();
+  }
+  showView('dashboard');
+  showToast('Welcome back, ' + (user.name || 'User') + '! 👋', 'success');
+}
+
+async function handleLogout() {
+  if (firebaseInitialized && auth) {
+    try { await auth.signOut(); } catch(e) {}
+  }
+  currentUser = null;
+  localStorage.removeItem('ma_session');
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('app-login').style.display = 'flex';
+  const statusBox = document.getElementById('login-status-box');
+  if (statusBox) statusBox.style.display = 'none';
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-password').value = '';
+  showToast('Logged out successfully', 'info');
+}
+
+function switchLoginTab(tab) {
+  document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
+  document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  document.getElementById('login-signin-form').style.display = tab === 'signin' ? '' : 'none';
+  document.getElementById('login-register-form').style.display = tab === 'register' ? '' : 'none';
+}
+
+// ============================================================
+//  ADMIN APPROVALS LOGIC
+// ============================================================
+async function fetchAllFacultyList() {
+  if (firebaseInitialized && db) {
+    try {
+      const snap = await db.collection('users').where('role', '==', 'faculty').get();
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch(e) {
+      console.warn('Firestore fetch error, using local fallback:', e);
+    }
+  }
+  return getLocalFaculty();
+}
+
+async function updateApprovalsBadge() {
+  const faculty = await fetchAllFacultyList();
+  const pendingCount = faculty.filter(f => f.status === 'email_verified' || f.status === 'pending_approval' || f.status === 'pending_verification').length;
+  const badge = document.getElementById('approvals-badge');
+  if (badge) {
+    badge.textContent = pendingCount;
+    badge.style.display = pendingCount > 0 ? 'inline-flex' : 'none';
+  }
+}
+
+async function renderApprovalsView() {
+  const listContainer = document.getElementById('approvals-list');
+  const tbody = document.getElementById('all-faculty-tbody');
+  listContainer.innerHTML = '<div style="text-align:center;color:#94A3B8;padding:24px;"><span class="material-symbols-outlined" style="animation:spin 1s linear infinite;font-size:24px;color:#2563EB;">refresh</span> Loading faculty requests...</div>';
+
+  const faculty = await fetchAllFacultyList();
+
+  let pending = 0, approved = 0, rejected = 0;
+  faculty.forEach(f => {
+    if (f.status === 'approved') approved++;
+    else if (f.status === 'rejected') rejected++;
+    else pending++;
+  });
+
+  document.getElementById('approvals-count-pending').textContent = pending;
+  document.getElementById('approvals-count-approved').textContent = approved;
+  document.getElementById('approvals-count-rejected').textContent = rejected;
+  document.getElementById('pending-counter-label').textContent = `${pending} requests pending`;
+
+  // Render Pending List Cards
+  const pendingFaculty = faculty.filter(f => f.status === 'email_verified' || f.status === 'pending_approval' || f.status === 'pending_verification');
+
+  if (!pendingFaculty.length) {
+    listContainer.innerHTML = `
+      <div style="text-align:center;padding:40px 20px;">
+        <span class="material-symbols-outlined" style="font-size:42px;color:#10B981;">task_alt</span>
+        <h4 style="font-size:16px;font-weight:700;color:#0F172A;margin-top:10px;">Queue is Clean!</h4>
+        <p style="color:#64748B;font-size:13.5px;margin-top:2px;">No faculty registrations pending approval at this moment.</p>
+      </div>
+    `;
+  } else {
+    listContainer.innerHTML = '';
+    pendingFaculty.forEach(u => {
+      const isEmailVerified = (u.emailVerified || u.status === 'email_verified');
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:16px;display:flex;align-items:center;gap:14px;';
+      card.innerHTML = `
+        <div class="avatar" style="background:${avatarColor(u.name)};color:#fff;width:44px;height:44px;font-size:15px;flex-shrink:0;">${getInitials(u.name)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-weight:700;color:#0F172A;font-size:15px;">${u.name}</span>
+            <span class="badge badge-cobalt">${u.department || 'General'}</span>
+            ${isEmailVerified 
+              ? '<span class="badge badge-emerald"><span class="material-symbols-outlined" style="font-size:12px;margin-right:2px;">verified</span> Gmail Verified</span>' 
+              : '<span class="badge badge-amber"><span class="material-symbols-outlined" style="font-size:12px;margin-right:2px;">schedule</span> Gmail Unverified</span>'}
+          </div>
+          <div style="font-size:13px;color:#475569;margin-top:3px;font-family:'JetBrains Mono',monospace;">${u.email}</div>
+          <div style="font-size:11.5px;color:#94A3B8;margin-top:2px;">Registered: ${formatDateTime(u.createdAt)}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn btn-primary" onclick="approveUser('${u.uid || u.id}', '${u.name}')" style="padding:7px 14px;font-size:13px;">
+            <span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Approve
+          </button>
+          <button class="btn btn-danger" onclick="rejectUser('${u.uid || u.id}', '${u.name}')" style="padding:7px 14px;font-size:13px;">
+            <span class="material-symbols-outlined" style="font-size:16px;">cancel</span> Reject
+          </button>
+        </div>
+      `;
+      listContainer.appendChild(card);
+    });
+  }
+
+  // Render Audit Table
+  if (!faculty.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94A3B8;padding:24px;">No faculty accounts registered yet</td></tr>';
+  } else {
+    tbody.innerHTML = '';
+    faculty.forEach(f => {
+      const isEmailVerified = (f.emailVerified || f.status === 'email_verified' || f.status === 'approved');
+      const emailBadge = isEmailVerified ? 'badge-emerald' : 'badge-amber';
+      const emailLabel = isEmailVerified ? 'Verified' : 'Pending';
+
+      let statusBadge = 'badge-amber';
+      let statusLabel = 'Pending Approval';
+      if (f.status === 'approved') {
+        statusBadge = 'badge-emerald';
+        statusLabel = 'Approved / Active';
+      } else if (f.status === 'rejected') {
+        statusBadge = 'badge-rose';
+        statusLabel = 'Rejected';
+      }
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="avatar" style="background:${avatarColor(f.name)};color:#fff;width:28px;height:28px;font-size:11px;">${getInitials(f.name)}</div>
+            <span style="font-weight:600;color:#0F172A;">${f.name}</span>
+          </div>
+        </td>
+        <td style="font-size:13px;color:#475569;font-family:'JetBrains Mono',monospace;">${f.email}</td>
+        <td><span class="badge badge-slate">${f.department || 'General'}</span></td>
+        <td style="font-size:12px;color:#64748B;">${formatDate(f.createdAt?.split('T')[0])}</td>
+        <td><span class="badge ${emailBadge}">${emailLabel}</span></td>
+        <td><span class="badge ${statusBadge}">${statusLabel}</span></td>
+        <td>
+          <div style="display:flex;gap:4px;">
+            ${f.status !== 'approved' ? `
+              <button class="btn btn-ghost" onclick="approveUser('${f.uid || f.id}', '${f.name}')" title="Approve faculty" style="padding:4px;color:#10B981;">
+                <span class="material-symbols-outlined" style="font-size:17px;">check_circle</span>
+              </button>
+            ` : ''}
+            ${f.status !== 'rejected' ? `
+              <button class="btn btn-ghost" onclick="rejectUser('${f.uid || f.id}', '${f.name}')" title="Reject / Revoke access" style="padding:4px;color:#EF4444;">
+                <span class="material-symbols-outlined" style="font-size:17px;">block</span>
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+async function approveUser(uid, name) {
+  if (firebaseInitialized && db) {
+    try {
+      await db.collection('users').doc(uid).update({
+        status: 'approved',
+        approvedAt: new Date().toISOString(),
+        approvedBy: currentUser ? currentUser.email : 'admin'
+      });
+    } catch(e) {
+      console.warn('Firestore update error:', e);
+    }
+  }
+
+  // Local registry update
+  const registry = getLocalFaculty();
+  const f = registry.find(x => (x.uid === uid || x.id === uid));
+  if (f) {
+    f.status = 'approved';
+    f.emailVerified = true;
+    f.approvedAt = new Date().toISOString();
+    saveLocalFaculty(registry);
+  }
+
+  showToast(`✅ ${name} has been approved! Login access granted.`, 'success');
+  logActivity('student', name, 'Faculty registration approved');
+  renderApprovalsView();
+  updateApprovalsBadge();
+}
+
+async function rejectUser(uid, name) {
+  if (!confirm(`Are you sure you want to reject registration for ${name}? They will be blocked from logging in.`)) return;
+
+  if (firebaseInitialized && db) {
+    try {
+      await db.collection('users').doc(uid).update({
+        status: 'rejected',
+        rejectedAt: new Date().toISOString(),
+        rejectedBy: currentUser ? currentUser.email : 'admin'
+      });
+    } catch(e) {
+      console.warn('Firestore update error:', e);
+    }
+  }
+
+  // Local registry update
+  const registry = getLocalFaculty();
+  const f = registry.find(x => (x.uid === uid || x.id === uid));
+  if (f) {
+    f.status = 'rejected';
+    f.rejectedAt = new Date().toISOString();
+    saveLocalFaculty(registry);
+  }
+
+  showToast(`${name}'s registration has been rejected.`, 'info');
+  renderApprovalsView();
+  updateApprovalsBadge();
+}
+
+// ============================================================
+//  NAVIGATION
+// ============================================================
+function showView(viewName) {
+  const views = ['dashboard','students','attendance','fees','reports','approvals'];
+  views.forEach(v => {
+    const el = document.getElementById('view-' + v);
+    if (el) el.style.display = (v === viewName) ? '' : 'none';
+  });
+  views.forEach(v => {
+    const el = document.getElementById('nav-' + v);
+    if (el) el.classList.toggle('active', v === viewName);
+  });
+  const titles = { 
+    dashboard:'Dashboard', 
+    students:'Students', 
+    attendance:'Attendance', 
+    fees:'Fee Management', 
+    reports:'Reports & Analytics',
+    approvals:'Faculty Approvals'
+  };
+  document.getElementById('page-title').textContent = titles[viewName] || viewName;
+
+  // Render the view
+  if (viewName === 'dashboard') renderDashboard();
+  if (viewName === 'students') renderStudentsTable();
+  if (viewName === 'attendance') {
+    document.getElementById('att-date').value = todayString();
+    renderAttendanceView();
+  }
+  if (viewName === 'fees') renderFeesTable();
+  if (viewName === 'reports') renderReports();
+  if (viewName === 'approvals') renderApprovalsView();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+function toggleUserMenu() {
+  const m = document.getElementById('user-menu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#user-menu') && !e.target.closest('[onclick="toggleUserMenu()"]')) {
+    const m = document.getElementById('user-menu');
+    if (m) m.style.display = 'none';
+  }
+});
+
+function toggleNotifications() {
+  showToast('No new notifications', 'info');
+}
+
+function openSettings() {
+  openModal('modal-settings');
+  document.getElementById('user-menu').style.display = 'none';
+}
+
+function renderAll() {
+  renderDashboard();
+  renderStudentsTable();
+  renderFeesTable();
+  renderReports();
+}
+
+// ============================================================
+//  MODAL HELPERS
+// ============================================================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ============================================================
+//  DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const students = getStudents();
+  const attData = getAttendanceData();
+  const feeData = getFeesData();
+  const today = todayString();
+
+  // Greeting
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dash-greeting').textContent = `${greet}, ${currentUser?.name || 'Admin'} 👋`;
+  document.getElementById('dash-date').textContent = 'Today: ' + new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+  // KPIs
+  document.getElementById('kpi-total').textContent = students.length;
+
+  let presentCount = 0, absentCount = 0;
+  for (const s of students) {
+    const st = attData[s.id]?.[today];
+    if (st === 'present' || st === 'late') presentCount++;
+    else if (st === 'absent') absentCount++;
+  }
+  document.getElementById('kpi-present').textContent = presentCount;
+  document.getElementById('kpi-absent').textContent = absentCount;
+  const pct = students.length ? Math.round(presentCount / students.length * 100) : 0;
+  document.getElementById('kpi-present-bar').style.width = pct + '%';
+  document.getElementById('kpi-absent-bar').style.width = (students.length ? Math.round(absentCount / students.length * 100) : 0) + '%';
+
+  let totalFee = 0, paidFee = 0;
+  for (const s of students) {
+    const f = feeData[s.id];
+    if (f) { totalFee += f.total; paidFee += f.paid; }
+  }
+  const pendingFee = totalFee - paidFee;
+  document.getElementById('kpi-fees').textContent = formatCurrency(pendingFee);
+
+  // Fee chart
+  document.getElementById('fee-collected').textContent = formatCurrency(paidFee);
+  document.getElementById('fee-pending-dash').textContent = formatCurrency(pendingFee);
+  const paidPct = totalFee > 0 ? paidFee / totalFee : 0;
+  const circumference = 2 * Math.PI * 45;
+  document.getElementById('donut-paid').setAttribute('stroke-dasharray', `${paidPct * circumference} ${circumference}`);
+  document.getElementById('donut-pct').textContent = Math.round(paidPct * 100) + '%';
+
+  // Attendance trend chart
+  const chartEl = document.getElementById('attendance-chart');
+  chartEl.innerHTML = '';
+  for (let i = 6; i >= 0; i--) {
+    const dt = new Date();
+    dt.setDate(dt.getDate() - i);
+    const ds = dt.toISOString().split('T')[0];
+    let pCnt = 0;
+    for (const s of students) {
+      const st = attData[s.id]?.[ds];
+      if (st === 'present' || st === 'late') pCnt++;
+    }
+    const p = students.length ? Math.round(pCnt / students.length * 100) : 0;
+    const dayLabel = dt.toLocaleDateString('en-IN', { weekday:'short', month:'short', day:'numeric' });
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;';
+    row.innerHTML = `
+      <span style="font-size:11px;color:#64748B;width:80px;flex-shrink:0;">${dayLabel}</span>
+      <div style="flex:1;background:#E2E8F0;border-radius:4px;height:22px;overflow:hidden;">
+        <div class="bar-chart-bar" style="width:${p}%;height:100%;font-size:11px;">${p > 10 ? p + '%' : ''}</div>
+      </div>
+      <span style="font-size:11px;color:#64748B;width:30px;text-align:right;">${p}%</span>
+    `;
+    chartEl.appendChild(row);
+  }
+
+  // Recent activity
+  const acts = getActivity();
+  const tbody = document.getElementById('recent-activity-body');
+  tbody.innerHTML = '';
+  if (!acts.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94A3B8;padding:20px;">No recent activity</td></tr>';
+    return;
+  }
+  const typeIcon = { attendance:'fact_check', payment:'payments', student:'person_add' };
+  const typeBadge = { attendance:'badge-cobalt', payment:'badge-emerald', student:'badge-navy' };
+  acts.slice(0,10).forEach(a => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono" style="font-size:12px;color:#64748B;">${formatDateTime(a.time)}</td>
+      <td><span class="badge ${typeBadge[a.type]||'badge-slate'}">${a.type}</span></td>
+      <td style="font-weight:500;">${a.studentName}</td>
+      <td style="color:#475569;font-size:13px;">${a.details}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ============================================================
+//  ATTENDANCE
+// ============================================================
+function calculateAttendance(studentId) {
+  const attData = getAttendanceData();
+  const records = attData[studentId] || {};
+  const days = Object.keys(records);
+  const present = days.filter(d => records[d] === 'present' || records[d] === 'late').length;
+  return days.length ? Math.round(present / days.length * 100) : 0;
+}
+
+function renderAttendanceView() {
+  const dateVal = document.getElementById('att-date').value || todayString();
+  const course = document.getElementById('att-course-filter').value;
+  const search = document.getElementById('att-search').value.toLowerCase();
+  const attData = getAttendanceData();
+  let students = getStudents();
+  if (course) students = students.filter(s => s.course === course);
+  if (search) students = students.filter(s => s.name.toLowerCase().includes(search) || s.roll.toLowerCase().includes(search));
+
+  // Check if already saved for this date
+  const alreadySaved = students.some(s => attData[s.id]?.[dateVal] !== undefined);
+
+  // Init state
+  for (const s of students) {
+    if (!(s.id in attendanceState)) {
+      attendanceState[s.id] = attData[s.id]?.[dateVal] || 'none';
+    } else if (attData[s.id]?.[dateVal] !== undefined && attData[s.id][dateVal] !== attendanceState[s.id]) {
+      // Sync saved value
+    }
+    // load from saved if switching dates
+    attendanceState[s.id] = attData[s.id]?.[dateVal] || attendanceState[s.id] || 'none';
+  }
+
+  const listEl = document.getElementById('att-student-list');
+  listEl.innerHTML = '';
+
+  if (!students.length) {
+    listEl.innerHTML = '<div style="padding:30px;text-align:center;color:#94A3B8;">No students found</div>';
+    updateAttSummary(students);
+    return;
+  }
+
+  students.forEach(s => {
+    const status = attendanceState[s.id] || 'none';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid #F1F5F9;';
+    row.id = 'att-row-' + s.id;
+    row.innerHTML = `
+      <div class="avatar" style="background:${avatarColor(s.name)};color:#fff;width:36px;height:36px;font-size:13px;">${getInitials(s.name)}</div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:600;color:#0F172A;">${s.name}</div>
+        <div style="font-size:12px;color:#64748B;">${s.roll} · ${s.course}</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="att-btn ${status==='present'?'present':'none'}" onclick="setAttendance('${s.id}','present')">✅ P</button>
+        <button class="att-btn ${status==='absent'?'absent':'none'}" onclick="setAttendance('${s.id}','absent')">❌ A</button>
+        <button class="att-btn ${status==='late'?'late':'none'}" onclick="setAttendance('${s.id}','late')">🕐 L</button>
+      </div>
+    `;
+    listEl.appendChild(row);
+  });
+
+  updateAttSummary(students);
+}
+
+function setAttendance(studentId, status) {
+  attendanceState[studentId] = status;
+  const row = document.getElementById('att-row-' + studentId);
+  if (!row) return;
+  const btns = row.querySelectorAll('.att-btn');
+  btns[0].className = 'att-btn ' + (status === 'present' ? 'present' : 'none');
+  btns[1].className = 'att-btn ' + (status === 'absent' ? 'absent' : 'none');
+  btns[2].className = 'att-btn ' + (status === 'late' ? 'late' : 'none');
+
+  const course = document.getElementById('att-course-filter').value;
+  const search = document.getElementById('att-search').value.toLowerCase();
+  let students = getStudents();
+  if (course) students = students.filter(s => s.course === course);
+  if (search) students = students.filter(s => s.name.toLowerCase().includes(search) || s.roll.toLowerCase().includes(search));
+  updateAttSummary(students);
+}
+
+function updateAttSummary(students) {
+  let total = students.length, present = 0, absent = 0, late = 0;
+  for (const s of students) {
+    const st = attendanceState[s.id] || 'none';
+    if (st === 'present') present++;
+    else if (st === 'absent') absent++;
+    else if (st === 'late') late++;
+  }
+  const pct = total ? Math.round((present + late) / total * 100) : 0;
+  document.getElementById('att-sum-total').textContent = total;
+  document.getElementById('att-sum-present').textContent = present;
+  document.getElementById('att-sum-absent').textContent = absent;
+  document.getElementById('att-sum-late').textContent = late;
+  document.getElementById('att-sum-pct').textContent = pct + '%';
+  document.getElementById('att-sum-bar').style.width = pct + '%';
+}
+
+function markAllAttendance(status) {
+  const course = document.getElementById('att-course-filter').value;
+  const search = document.getElementById('att-search').value.toLowerCase();
+  let students = getStudents();
+  if (course) students = students.filter(s => s.course === course);
+  if (search) students = students.filter(s => s.name.toLowerCase().includes(search) || s.roll.toLowerCase().includes(search));
+  for (const s of students) {
+    attendanceState[s.id] = status;
+  }
+  renderAttendanceView();
+  showToast(`All students marked ${status}`, 'info');
+}
+
+function saveAttendanceRecord() {
+  const dateVal = document.getElementById('att-date').value || todayString();
+  const course = document.getElementById('att-course-filter').value;
+  const search = document.getElementById('att-search').value.toLowerCase();
+  let students = getStudents();
+  if (course) students = students.filter(s => s.course === course);
+  if (search) students = students.filter(s => s.name.toLowerCase().includes(search) || s.roll.toLowerCase().includes(search));
+
+  const attData = getAttendanceData();
+  let saved = 0;
+  for (const s of students) {
+    const st = attendanceState[s.id];
+    if (st && st !== 'none') {
+      if (!attData[s.id]) attData[s.id] = {};
+      attData[s.id][dateVal] = st;
+      saved++;
+    }
+  }
+  saveAttendanceData(attData);
+  logActivity('attendance', 'Class', `Attendance saved for ${dateVal} (${saved} students)`);
+  showToast(`Attendance saved for ${saved} student(s)`, 'success');
+  attendanceState = {};
+  renderAttendanceView();
+  renderDashboard();
+}
+
+function toggleCalendarView() {
+  calendarViewOpen = !calendarViewOpen;
+  document.getElementById('att-calendar-view').style.display = calendarViewOpen ? '' : 'none';
+  document.getElementById('cal-toggle-btn').style.background = calendarViewOpen ? '#EFF6FF' : '';
+  if (calendarViewOpen) renderCalendar();
+}
+
+function renderCalendar() {
+  const attData = getAttendanceData();
+  const students = getStudents();
+  const course = document.getElementById('att-course-filter').value;
+  let filteredStudents = course ? students.filter(s => s.course === course) : students;
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const grid = document.getElementById('calendar-grid');
+  grid.innerHTML = '';
+
+  for (const s of filteredStudents.slice(0, 8)) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:16px;';
+    wrap.innerHTML = `<div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:6px;">${s.name} <span style="color:#64748B;font-weight:400;">(${s.roll})</span></div>`;
+    const calRow = document.createElement('div');
+    calRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dt = new Date(year, month, d);
+      const ds = dt.toISOString().split('T')[0];
+      const dow = dt.getDay();
+      const cell = document.createElement('div');
+      cell.className = 'cal-cell';
+      cell.title = ds;
+      if (dow === 0 || dow === 6) {
+        cell.classList.add('cal-h');
+        cell.textContent = d;
+      } else {
+        const st = attData[s.id]?.[ds];
+        if (st === 'present') cell.classList.add('cal-p');
+        else if (st === 'absent') cell.classList.add('cal-a');
+        else if (st === 'late') cell.classList.add('cal-l');
+        else cell.classList.add('cal-n');
+        cell.textContent = d;
+      }
+      calRow.appendChild(cell);
+    }
+    wrap.appendChild(calRow);
+    grid.appendChild(wrap);
+  }
+}
+
+// ============================================================
+//  STUDENTS
+// ============================================================
+function renderStudentsTable() {
+  const search = document.getElementById('student-search').value.toLowerCase();
+  const course = document.getElementById('student-course-filter').value;
+  let students = getStudents();
+  if (search) students = students.filter(s => s.name.toLowerCase().includes(search) || s.roll.toLowerCase().includes(search) || s.email.toLowerCase().includes(search));
+  if (course) students = students.filter(s => s.course === course);
+
+  const feeData = getFeesData();
+  const tbody = document.getElementById('students-tbody');
+  tbody.innerHTML = '';
+
+  if (!students.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94A3B8;padding:30px;">No students found</td></tr>';
+    return;
+  }
+
+  students.forEach(s => {
+    const pct = calculateAttendance(s.id);
+    const attBadge = pct >= 75 ? 'badge-emerald' : pct >= 50 ? 'badge-amber' : 'badge-rose';
+    const f = feeData[s.id];
+    let feeStatus = 'Pending', feeBadge = 'badge-rose';
+    if (f) {
+      if (f.paid >= f.total) { feeStatus = 'Paid'; feeBadge = 'badge-emerald'; }
+      else if (f.paid > 0) { feeStatus = 'Partial'; feeBadge = 'badge-amber'; }
+    }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono" style="font-size:12px;color:#64748B;">${s.roll}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="avatar" style="background:${avatarColor(s.name)};color:#fff;width:30px;height:30px;font-size:11px;">${getInitials(s.name)}</div>
+          <span style="font-weight:500;">${s.name}</span>
+        </div>
+      </td>
+      <td><span class="badge badge-cobalt">${s.course}</span></td>
+      <td class="mono" style="font-size:12px;">${s.phone||'—'}</td>
+      <td style="font-size:12px;color:#64748B;">${s.email||'—'}</td>
+      <td><span class="badge ${attBadge}">${pct}%</span></td>
+      <td><span class="badge ${feeBadge}">${feeStatus}</span></td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-ghost" style="padding:4px 8px;" onclick="openStudentDrawer('${s.id}')" title="View">
+            <span class="material-symbols-outlined" style="font-size:17px;color:#2563EB;">visibility</span>
+          </button>
+          <button class="btn btn-ghost" style="padding:4px 8px;" onclick="openEditStudentModal('${s.id}')" title="Edit">
+            <span class="material-symbols-outlined" style="font-size:17px;color:#F59E0B;">edit</span>
+          </button>
+          <button class="btn btn-ghost" style="padding:4px 8px;" onclick="deleteStudent('${s.id}','${s.name}')" title="Delete">
+            <span class="material-symbols-outlined" style="font-size:17px;color:#EF4444;">delete</span>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function openAddStudentModal() {
+  document.getElementById('modal-student-title').textContent = 'Add Student';
+  document.getElementById('edit-student-id').value = '';
+  document.getElementById('s-roll').value = '';
+  document.getElementById('s-name').value = '';
+  document.getElementById('s-course').value = '';
+  document.getElementById('s-semester').value = '1';
+  document.getElementById('s-phone').value = '';
+  document.getElementById('s-email').value = '';
+  document.getElementById('s-guardian').value = '';
+  document.getElementById('s-guardian-phone').value = '';
+  document.getElementById('s-address').value = '';
+  document.getElementById('s-admission').value = todayString();
+  openModal('modal-add-student');
+}
+
+function openEditStudentModal(id) {
+  const students = getStudents();
+  const s = students.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('modal-student-title').textContent = 'Edit Student';
+  document.getElementById('edit-student-id').value = s.id;
+  document.getElementById('s-roll').value = s.roll || '';
+  document.getElementById('s-name').value = s.name || '';
+  document.getElementById('s-course').value = s.course || '';
+  document.getElementById('s-semester').value = s.semester || '1';
+  document.getElementById('s-phone').value = s.phone || '';
+  document.getElementById('s-email').value = s.email || '';
+  document.getElementById('s-guardian').value = s.guardian || '';
+  document.getElementById('s-guardian-phone').value = s.guardianPhone || '';
+  document.getElementById('s-address').value = s.address || '';
+  document.getElementById('s-admission').value = s.admission || '';
+  openModal('modal-add-student');
+}
+
+function saveStudent() {
+  const name = document.getElementById('s-name').value.trim();
+  const course = document.getElementById('s-course').value;
+  if (!name || !course) { showToast('Name and Course are required', 'error'); return; }
+
+  const editId = document.getElementById('edit-student-id').value;
+  const students = getStudents();
+  const feeData = getFeesData();
+
+  const data = {
+    name, course,
+    roll: document.getElementById('s-roll').value.trim() || generateRollNo(course),
+    semester: document.getElementById('s-semester').value,
+    phone: document.getElementById('s-phone').value.trim(),
+    email: document.getElementById('s-email').value.trim(),
+    guardian: document.getElementById('s-guardian').value.trim(),
+    guardianPhone: document.getElementById('s-guardian-phone').value.trim(),
+    address: document.getElementById('s-address').value.trim(),
+    admission: document.getElementById('s-admission').value,
+  };
+
+  if (editId) {
+    const idx = students.findIndex(x => x.id === editId);
+    if (idx >= 0) {
+      students[idx] = { ...students[idx], ...data };
+      saveStudents(students);
+      showToast('Student updated successfully', 'success');
+      logActivity('student', name, 'Profile updated');
+    }
+  } else {
+    const id = 's' + Date.now();
+    data.id = id;
+    students.push(data);
+    saveStudents(students);
+    // Init fee record
+    const total = FEE_STRUCTURE[course] || 0;
+    feeData[id] = { total, paid: 0, history: [] };
+    saveFeesData(feeData);
+    showToast('Student added successfully', 'success');
+    logActivity('student', name, `Enrolled in ${course}`);
+  }
+
+  closeModal('modal-add-student');
+  renderStudentsTable();
+  renderDashboard();
+}
+
+function deleteStudent(id, name) {
+  studentToDelete = id;
+  document.getElementById('delete-student-name').textContent = name;
+  openModal('modal-confirm-delete');
+}
+
+function confirmDelete() {
+  if (!studentToDelete) return;
+  let students = getStudents();
+  students = students.filter(s => s.id !== studentToDelete);
+  saveStudents(students);
+  // Clean up fees and attendance
+  const feeData = getFeesData();
+  delete feeData[studentToDelete];
+  saveFeesData(feeData);
+  const attData = getAttendanceData();
+  delete attData[studentToDelete];
+  saveAttendanceData(attData);
+  studentToDelete = null;
+  closeModal('modal-confirm-delete');
+  showToast('Student deleted', 'success');
+  renderStudentsTable();
+  renderDashboard();
+}
+
+function exportStudentsCSV() {
+  const students = getStudents();
+  const feeData = getFeesData();
+  const rows = [['Roll No','Name','Course','Semester','Phone','Email','Attendance%','Fee Status']];
+  for (const s of students) {
+    const pct = calculateAttendance(s.id);
+    const f = feeData[s.id];
+    let feeStatus = 'Pending';
+    if (f) { feeStatus = f.paid >= f.total ? 'Paid' : f.paid > 0 ? 'Partial' : 'Pending'; }
+    rows.push([s.roll, s.name, s.course, s.semester, s.phone, s.email, pct+'%', feeStatus]);
+  }
+  downloadCSV(rows, 'students_export.csv');
+  showToast('Students CSV exported', 'success');
+}
+
+// ============================================================
+//  STUDENT DRAWER
+// ============================================================
+function openStudentDrawer(id) {
+  const students = getStudents();
+  const s = students.find(x => x.id === id);
+  if (!s) return;
+  const attData = getAttendanceData();
+  const feeData = getFeesData();
+  const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[] };
+  const pct = calculateAttendance(s.id);
+  const attBadge = pct >= 75 ? 'badge-emerald' : pct >= 50 ? 'badge-amber' : 'badge-rose';
+  let feeStatus = 'Pending', feeBadge = 'badge-rose';
+  if (f.paid >= f.total) { feeStatus = 'Paid'; feeBadge = 'badge-emerald'; }
+  else if (f.paid > 0) { feeStatus = 'Partial'; feeBadge = 'badge-amber'; }
+
+  // Attendance records
+  const records = attData[s.id] || {};
+  const sortedDates = Object.keys(records).sort((a,b) => b.localeCompare(a)).slice(0,30);
+
+  let attRows = '';
+  for (const d of sortedDates) {
+    const st = records[d];
+    const badge = st === 'present' ? 'badge-emerald' : st === 'absent' ? 'badge-rose' : 'badge-amber';
+    attRows += `<tr><td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${d}</td><td><span class="badge ${badge}">${st}</span></td></tr>`;
+  }
+
+  // Fee history
+  let feeRows = '';
+  for (const p of (f.history || []).slice().reverse()) {
+    feeRows += `<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;">${p.date}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:600;color:#10B981;">${formatCurrency(p.amount)}</td>
+      <td>${p.mode}</td>
+      <td style="font-size:11px;color:#64748B;">${p.txn||'—'}</td>
+      <td style="font-size:11px;color:#64748B;">${p.remarks||'—'}</td>
+    </tr>`;
+  }
+
+  document.getElementById('drawer-content').innerHTML = `
+    <!-- Profile Header -->
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding:16px;background:#F8FAFC;border-radius:8px;">
+      <div class="avatar" style="background:${avatarColor(s.name)};color:#fff;width:56px;height:56px;font-size:20px;">${getInitials(s.name)}</div>
+      <div>
+        <h2 style="font-family:'Hanken Grotesk',sans-serif;font-size:18px;font-weight:700;color:#0F172A;">${s.name}</h2>
+        <p style="font-size:12px;color:#64748B;font-family:'JetBrains Mono',monospace;">${s.roll}</p>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <span class="badge badge-cobalt">${s.course} Sem ${s.semester}</span>
+          <span class="badge ${attBadge}">${pct}%</span>
+          <span class="badge ${feeBadge}">${feeStatus}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;font-size:13px;">
+      <div><span style="color:#64748B;">Phone:</span> <span style="font-family:'JetBrains Mono',monospace;">${s.phone||'—'}</span></div>
+      <div><span style="color:#64748B;">Email:</span> ${s.email||'—'}</div>
+      <div><span style="color:#64748B;">Guardian:</span> ${s.guardian||'—'}</div>
+      <div><span style="color:#64748B;">G. Phone:</span> <span style="font-family:'JetBrains Mono',monospace;">${s.guardianPhone||'—'}</span></div>
+      <div style="grid-column:1/-1;"><span style="color:#64748B;">Address:</span> ${s.address||'—'}</div>
+      <div><span style="color:#64748B;">Admission:</span> ${formatDate(s.admission)}</div>
+    </div>
+
+    <!-- Fee Summary -->
+    <div style="padding:12px 16px;background:#F0FDF4;border-radius:8px;border:1px solid #A7F3D0;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
+        <span style="color:#065F46;font-weight:600;">Fee Summary</span>
+        <span class="badge ${feeBadge}">${feeStatus}</span>
+      </div>
+      <div class="progress-bar" style="margin-bottom:8px;">
+        <div class="progress-fill" style="background:#10B981;width:${f.total?Math.round(f.paid/f.total*100):0}%;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#475569;">
+        <span>Paid: <strong style="color:#10B981;">${formatCurrency(f.paid)}</strong></span>
+        <span>Pending: <strong style="color:#EF4444;">${formatCurrency(f.total-f.paid)}</strong></span>
+        <span>Total: <strong>${formatCurrency(f.total)}</strong></span>
+      </div>
+    </div>
+
+    <!-- Attendance History -->
+    <div style="margin-bottom:20px;">
+      <h4 style="font-family:'Hanken Grotesk',sans-serif;font-size:14px;font-weight:700;color:#0F172A;margin-bottom:8px;">Attendance History (Last 30 Days)</h4>
+      <div style="max-height:180px;overflow-y:auto;border:1px solid #F1F5F9;border-radius:6px;">
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Status</th></tr></thead>
+          <tbody>${attRows || '<tr><td colspan="2" style="text-align:center;color:#94A3B8;">No records</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Payment History -->
+    <div>
+      <h4 style="font-family:'Hanken Grotesk',sans-serif;font-size:14px;font-weight:700;color:#0F172A;margin-bottom:8px;">Payment History</h4>
+      <div style="border:1px solid #F1F5F9;border-radius:6px;overflow:hidden;">
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Amount</th><th>Mode</th><th>Txn ID</th><th>Remarks</th></tr></thead>
+          <tbody>${feeRows || '<tr><td colspan="5" style="text-align:center;color:#94A3B8;">No payments</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('drawer-student-detail').classList.add('open');
+  document.getElementById('drawer-overlay').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawer-student-detail').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+}
+
+// ============================================================
+//  FEES
+// ============================================================
+function renderFeesTable() {
+  const search = document.getElementById('fee-search').value.toLowerCase();
+  const statusFilter = document.getElementById('fee-status-filter').value;
+  const courseFilter = document.getElementById('fee-course-filter').value;
+  let students = getStudents();
+  const feeData = getFeesData();
+
+  if (courseFilter) students = students.filter(s => s.course === courseFilter);
+  if (search) students = students.filter(s => s.name.toLowerCase().includes(search) || s.roll.toLowerCase().includes(search));
+
+  const tbody = document.getElementById('fees-tbody');
+  tbody.innerHTML = '';
+
+  let filtered = students.map(s => {
+    const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[] };
+    const pending = f.total - f.paid;
+    let status = 'Pending';
+    if (f.paid >= f.total) status = 'Paid';
+    else if (f.paid > 0) status = 'Partial';
+    return { s, f, pending, status };
+  });
+
+  if (statusFilter) filtered = filtered.filter(x => x.status === statusFilter);
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94A3B8;padding:30px;">No records found</td></tr>';
+    return;
+  }
+
+  filtered.forEach(({ s, f, pending, status }) => {
+    const badge = status === 'Paid' ? 'badge-emerald' : status === 'Partial' ? 'badge-amber' : 'badge-rose';
+    const lastPayment = f.history?.length ? f.history[f.history.length-1].date : null;
+
+    // Main row
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <button onclick="togglePayHistory('${s.id}')" class="btn btn-ghost" style="padding:2px 6px;">
+          <span class="material-symbols-outlined" id="exp-icon-${s.id}" style="font-size:16px;">expand_more</span>
+        </button>
+      </td>
+      <td class="mono" style="font-size:12px;color:#64748B;">${s.roll}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="avatar" style="background:${avatarColor(s.name)};color:#fff;width:28px;height:28px;font-size:10px;">${getInitials(s.name)}</div>
+          <span style="font-weight:500;">${s.name}</span>
+        </div>
+      </td>
+      <td><span class="badge badge-cobalt">${s.course}</span></td>
+      <td class="mono" style="font-size:13px;">${formatCurrency(f.total)}</td>
+      <td class="mono" style="font-size:13px;color:#10B981;font-weight:600;">${formatCurrency(f.paid)}</td>
+      <td class="mono" style="font-size:13px;color:${pending>0?'#EF4444':'#64748B'};font-weight:${pending>0?'600':'400'};">${formatCurrency(pending)}</td>
+      <td style="font-size:12px;color:#64748B;">${formatDate(lastPayment)}</td>
+      <td><span class="badge ${badge}">${status}</span></td>
+      <td>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-ghost" style="padding:4px;" onclick="openPaymentModalForStudent('${s.id}')" title="Record payment">
+            <span class="material-symbols-outlined" style="font-size:16px;color:#10B981;">add_card</span>
+          </button>
+          <button class="btn btn-ghost" style="padding:4px;" onclick="openStudentDrawer('${s.id}')" title="View profile">
+            <span class="material-symbols-outlined" style="font-size:16px;color:#2563EB;">person</span>
+          </button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    // History expandable row
+    const histRow = document.createElement('tr');
+    histRow.id = 'hist-row-' + s.id;
+    histRow.style.display = 'none';
+    histRow.className = 'payment-history-row';
+    let histContent = '<td colspan="10" style="padding:0;"><div style="padding:12px 20px 16px;">';
+    histContent += '<div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:8px;">Payment History</div>';
+    if (!f.history || f.history.length === 0) {
+      histContent += '<p style="font-size:13px;color:#94A3B8;">No payment records found.</p>';
+    } else {
+      histContent += '<table class="payment-table"><thead style="background:#F8FAFC;"><tr><th>Date</th><th>Amount</th><th>Mode</th><th>Transaction ID</th><th>Remarks</th></tr></thead><tbody>';
+      for (const p of [...(f.history||[])].reverse()) {
+        histContent += `<tr>
+          <td style="font-family:'JetBrains Mono',monospace;">${p.date}</td>
+          <td style="font-family:'JetBrains Mono',monospace;color:#10B981;font-weight:600;">${formatCurrency(p.amount)}</td>
+          <td>${p.mode}</td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:11px;">${p.txn||'—'}</td>
+          <td style="color:#64748B;font-size:12px;">${p.remarks||'—'}</td>
+        </tr>`;
+      }
+      histContent += '</tbody></table>';
+    }
+    histContent += '</div></td>';
+    histRow.innerHTML = histContent;
+    tbody.appendChild(histRow);
+  });
+}
+
+function togglePayHistory(id) {
+  const row = document.getElementById('hist-row-' + id);
+  const icon = document.getElementById('exp-icon-' + id);
+  if (!row) return;
+  const open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : '';
+  icon.textContent = open ? 'expand_more' : 'expand_less';
+}
+
+function toggleFeeStructure() {
+  const panel = document.getElementById('fee-structure-panel');
+  const chevron = document.getElementById('fee-structure-chevron');
+  const isOpen = panel.style.maxHeight !== '0px' && panel.style.maxHeight !== '';
+  if (isOpen) {
+    panel.style.maxHeight = '0px';
+    panel.style.opacity = '0';
+    chevron.textContent = 'expand_more';
+  } else {
+    panel.style.maxHeight = '400px';
+    panel.style.opacity = '1';
+    chevron.textContent = 'expand_less';
+  }
+}
+
+function openPaymentModal() {
+  const students = getStudents();
+  const sel = document.getElementById('pay-student');
+  sel.innerHTML = '<option value="">Choose a student...</option>';
+  for (const s of students) {
+    sel.innerHTML += `<option value="${s.id}">${s.name} (${s.roll})</option>`;
+  }
+  document.getElementById('pay-amount').value = '';
+  document.getElementById('pay-mode').value = 'Cash';
+  document.getElementById('pay-txn').value = '';
+  document.getElementById('pay-date').value = todayString();
+  document.getElementById('pay-remarks').value = '';
+  document.getElementById('pay-balance-info').style.display = 'none';
+  openModal('modal-record-payment');
+}
+
+function openPaymentModalForStudent(id) {
+  openPaymentModal();
+  setTimeout(() => {
+    const sel = document.getElementById('pay-student');
+    sel.value = id;
+    onPayStudentChange();
+  }, 50);
+}
+
+function onPayStudentChange() {
+  const id = document.getElementById('pay-student').value;
+  if (!id) { document.getElementById('pay-balance-info').style.display = 'none'; return; }
+  const feeData = getFeesData();
+  const f = feeData[id];
+  if (f) {
+    const pending = f.total - f.paid;
+    document.getElementById('pay-balance-amount').textContent = formatCurrency(pending);
+    document.getElementById('pay-balance-info').style.display = pending > 0 ? 'block' : 'none';
+  }
+}
+
+function recordPayment() {
+  const id = document.getElementById('pay-student').value;
+  const amount = parseFloat(document.getElementById('pay-amount').value);
+  const mode = document.getElementById('pay-mode').value;
+  const txn = document.getElementById('pay-txn').value.trim();
+  const date = document.getElementById('pay-date').value;
+  const remarks = document.getElementById('pay-remarks').value.trim();
+
+  if (!id) { showToast('Please select a student', 'error'); return; }
+  if (!amount || amount <= 0) { showToast('Please enter a valid amount', 'error'); return; }
+  if (!date) { showToast('Please select a payment date', 'error'); return; }
+
+  const feeData = getFeesData();
+  const students = getStudents();
+  const s = students.find(x => x.id === id);
+  if (!feeData[id]) {
+    feeData[id] = { total: FEE_STRUCTURE[s?.course]||0, paid: 0, history: [] };
+  }
+  const f = feeData[id];
+  const pending = f.total - f.paid;
+  if (amount > pending) { showToast(`Amount exceeds pending balance of ${formatCurrency(pending)}`, 'error'); return; }
+
+  f.paid += amount;
+  f.history.push({ date, amount, mode, txn, remarks });
+  saveFeesData(feeData);
+  logActivity('payment', s?.name||'Unknown', `Payment of ${formatCurrency(amount)} via ${mode}`);
+  showToast(`Payment of ${formatCurrency(amount)} recorded`, 'success');
+  closeModal('modal-record-payment');
+  renderFeesTable();
+  renderDashboard();
+}
+
+// ============================================================
+//  REPORTS
+// ============================================================
+function renderReports() {
+  renderAttendanceReport();
+  renderFeeReport();
+  renderDefaulterReport();
+}
+
+function renderAttendanceReport() {
+  const course = document.getElementById('rep-att-course').value;
+  let students = getStudents();
+  if (course) students = students.filter(s => s.course === course);
+
+  const attData = getAttendanceData();
+  const tbody = document.getElementById('rep-att-tbody');
+  tbody.innerHTML = '';
+
+  for (const s of students) {
+    const records = attData[s.id] || {};
+    const days = Object.keys(records);
+    const present = days.filter(d => records[d] === 'present').length;
+    const absent = days.filter(d => records[d] === 'absent').length;
+    const late = days.filter(d => records[d] === 'late').length;
+    const total = days.length;
+    const pct = total ? Math.round((present + late) / total * 100) : 0;
+    const badge = pct >= 75 ? 'badge-emerald' : pct >= 50 ? 'badge-amber' : 'badge-rose';
+    const statusText = pct >= 75 ? 'Good' : pct >= 50 ? 'At Risk' : 'Critical';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono" style="font-size:12px;">${s.roll}</td>
+      <td style="font-weight:500;">${s.name}</td>
+      <td><span class="badge badge-cobalt">${s.course}</span></td>
+      <td style="color:#10B981;font-weight:600;">${present}</td>
+      <td style="color:#EF4444;font-weight:600;">${absent}</td>
+      <td style="color:#F59E0B;font-weight:600;">${late}</td>
+      <td><span class="badge ${badge}">${pct}%</span></td>
+      <td><span class="badge ${badge}">${statusText}</span></td>
+    `;
+    tbody.appendChild(tr);
+  }
+  if (!students.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94A3B8;padding:20px;">No records</td></tr>';
+  }
+}
+
+function renderFeeReport() {
+  const students = getStudents();
+  const feeData = getFeesData();
+  const tbody = document.getElementById('rep-fee-tbody');
+  tbody.innerHTML = '';
+
+  for (const s of students) {
+    const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[] };
+    const pending = f.total - f.paid;
+    let status = 'Pending', badge = 'badge-rose';
+    if (f.paid >= f.total) { status = 'Paid'; badge = 'badge-emerald'; }
+    else if (f.paid > 0) { status = 'Partial'; badge = 'badge-amber'; }
+    const lastP = f.history?.length ? f.history[f.history.length-1].date : null;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono" style="font-size:12px;">${s.roll}</td>
+      <td style="font-weight:500;">${s.name}</td>
+      <td><span class="badge badge-cobalt">${s.course}</span></td>
+      <td class="mono">${formatCurrency(f.total)}</td>
+      <td class="mono" style="color:#10B981;font-weight:600;">${formatCurrency(f.paid)}</td>
+      <td class="mono" style="color:${pending>0?'#EF4444':'#64748B'};font-weight:${pending>0?'600':'400'};">${formatCurrency(pending)}</td>
+      <td style="font-size:12px;color:#64748B;">${formatDate(lastP)}</td>
+      <td><span class="badge ${badge}">${status}</span></td>
+    `;
+    tbody.appendChild(tr);
+  }
+  if (!students.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94A3B8;padding:20px;">No records</td></tr>';
+  }
+}
+
+function renderDefaulterReport() {
+  const students = getStudents();
+  const feeData = getFeesData();
+  const tbody = document.getElementById('rep-defaulter-tbody');
+  tbody.innerHTML = '';
+
+  let count = 0;
+  for (const s of students) {
+    const pct = calculateAttendance(s.id);
+    const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[] };
+    const pending = f.total - f.paid;
+    const lowAtt = pct < 75;
+    const highFee = pending > 10000;
+    if (!lowAtt && !highFee) continue;
+    count++;
+    const reasons = [];
+    if (lowAtt) reasons.push(`Attendance ${pct}% < 75%`);
+    if (highFee) reasons.push(`Fees >${formatCurrency(10000)} pending`);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono" style="font-size:12px;">${s.roll}</td>
+      <td style="font-weight:500;">${s.name}</td>
+      <td><span class="badge badge-cobalt">${s.course}</span></td>
+      <td><span class="badge ${pct<75?'badge-rose':'badge-emerald'}">${pct}%</span></td>
+      <td class="mono" style="color:#EF4444;font-weight:600;">${formatCurrency(pending)}</td>
+      <td style="font-size:12px;color:#64748B;">${reasons.join(' | ')}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+  if (count === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#10B981;padding:20px;">🎉 No defaulters found!</td></tr>';
+  }
+}
+
+// ============================================================
+//  CSV EXPORTS
+// ============================================================
+function downloadCSV(rows, filename) {
+  const csv = rows.map(r => r.map(cell => `"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportAttendanceCSV() {
+  const course = document.getElementById('rep-att-course').value;
+  let students = getStudents();
+  if (course) students = students.filter(s => s.course === course);
+  const attData = getAttendanceData();
+  const rows = [['Roll No','Name','Course','Present','Absent','Late','Attendance%','Status']];
+  for (const s of students) {
+    const records = attData[s.id] || {};
+    const days = Object.keys(records);
+    const present = days.filter(d => records[d] === 'present').length;
+    const absent = days.filter(d => records[d] === 'absent').length;
+    const late = days.filter(d => records[d] === 'late').length;
+    const pct = days.length ? Math.round((present+late)/days.length*100) : 0;
+    rows.push([s.roll, s.name, s.course, present, absent, late, pct+'%', pct>=75?'Good':pct>=50?'At Risk':'Critical']);
+  }
+  downloadCSV(rows, 'attendance_report.csv');
+  showToast('Attendance report exported', 'success');
+}
+
+function exportFeeCSV() {
+  const students = getStudents();
+  const feeData = getFeesData();
+  const rows = [['Roll No','Name','Course','Total Fee','Paid','Pending','Last Payment','Status']];
+  for (const s of students) {
+    const f = feeData[s.id] || { total:FEE_STRUCTURE[s.course]||0, paid:0, history:[] };
+    const pending = f.total - f.paid;
+    let status = f.paid >= f.total ? 'Paid' : f.paid > 0 ? 'Partial' : 'Pending';
+    const lastP = f.history?.length ? f.history[f.history.length-1].date : '';
+    rows.push([s.roll, s.name, s.course, f.total, f.paid, pending, lastP, status]);
+  }
+  downloadCSV(rows, 'fee_collection_report.csv');
+  showToast('Fee report exported', 'success');
+}
+
+function exportDefaultersCSV() {
+  const students = getStudents();
+  const feeData = getFeesData();
+  const rows = [['Roll No','Name','Course','Attendance%','Pending Fees','Reason']];
+  for (const s of students) {
+    const pct = calculateAttendance(s.id);
+    const f = feeData[s.id] || { total:FEE_STRUCTURE[s.course]||0, paid:0 };
+    const pending = f.total - f.paid;
+    if (pct < 75 || pending > 10000) {
+      const reasons = [];
+      if (pct < 75) reasons.push('Low attendance');
+      if (pending > 10000) reasons.push('High pending fees');
+      rows.push([s.roll, s.name, s.course, pct+'%', pending, reasons.join(' | ')]);
+    }
+  }
+  downloadCSV(rows, 'defaulter_list.csv');
+  showToast('Defaulter list exported', 'success');
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+(function init() {
+  // Show setup banner if Firebase keys haven't been pasted yet
+  const banner = document.getElementById('firebase-config-banner');
+  if (banner && (!firebaseInitialized || firebaseConfig.apiKey === 'YOUR_API_KEY')) {
+    banner.style.display = 'block';
+  }
+
+  // Restore persisted session
+  const session = localStorage.getItem('ma_session');
+  if (session) {
+    try {
+      const user = JSON.parse(session);
+      loginSuccess(user);
+    } catch(e) {
+      localStorage.removeItem('ma_session');
+    }
+  }
+
+  // Firebase auth state change listener (keeps active session verified)
+  if (firebaseInitialized && auth && db) {
+    auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        if (!firebaseUser.emailVerified) {
+          // If logged out externally or unverified
+          if (currentUser && currentUser.uid === firebaseUser.uid) {
+            handleLogout();
+          }
+        } else {
+          try {
+            const doc = await db.collection('users').doc(firebaseUser.uid).get();
+            if (doc.exists && doc.data().status === 'approved') {
+              const p = doc.data();
+              if (!currentUser || currentUser.uid !== firebaseUser.uid) {
+                loginSuccess({
+                  uid: firebaseUser.uid,
+                  name: p.name,
+                  email: p.email,
+                  role: p.role || 'faculty',
+                  department: p.department
+                });
+              }
+            } else if (currentUser && currentUser.uid === firebaseUser.uid) {
+              handleLogout();
+            }
+          } catch(e) {
+            console.warn('Auth listener check:', e);
+          }
+        }
+      }
+    });
+  }
+
+  // Set today's date in attendance and payment forms
+  const attDate = document.getElementById('att-date');
+  if (attDate) attDate.value = todayString();
+  const payDate = document.getElementById('pay-date');
+  if (payDate) payDate.value = todayString();
+})();
+</script>
+</body>
+</html>
