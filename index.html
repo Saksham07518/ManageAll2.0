@@ -563,7 +563,7 @@
           <button class="btn btn-secondary" onclick="showView('attendance')">
             <span class="material-symbols-outlined">fact_check</span> Mark Attendance
           </button>
-          <button class="btn btn-outline" onclick="openPaymentModal()">
+          <button id="dash-record-payment-btn" class="btn btn-outline" onclick="openPaymentModal()">
             <span class="material-symbols-outlined">payment</span> Record Payment
           </button>
         </div>
@@ -786,7 +786,10 @@
               <option>BCA</option><option>BBA</option><option>B.Com</option>
               <option>BSc</option><option>BE</option><option>MBA</option><option>MCA</option>
             </select>
-            <button class="btn btn-primary" onclick="openPaymentModal()">
+            <span id="fee-faculty-notice" class="badge badge-amber" style="display:none;padding:6px 12px;font-size:12px;">
+              <span class="material-symbols-outlined" style="font-size:14px;margin-right:4px;">lock</span> View-Only (Admin required to record payments)
+            </span>
+            <button id="fee-record-payment-btn" class="btn btn-primary" onclick="openPaymentModal()">
               <span class="material-symbols-outlined">add_card</span> Record Payment
             </button>
           </div>
@@ -1879,6 +1882,16 @@ function loginSuccess(user) {
   const approvalsNav = document.getElementById('nav-approvals');
   if (approvalsNav) approvalsNav.style.display = isAdmin ? 'flex' : 'none';
 
+  // Fee management permissions: Only Admin can record/edit fees
+  const dashPayBtn = document.getElementById('dash-record-payment-btn');
+  if (dashPayBtn) dashPayBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+
+  const feePayBtn = document.getElementById('fee-record-payment-btn');
+  if (feePayBtn) feePayBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+
+  const feeFacultyNotice = document.getElementById('fee-faculty-notice');
+  if (feeFacultyNotice) feeFacultyNotice.style.display = !isAdmin ? 'inline-flex' : 'none';
+
   const roleBadge = document.getElementById('sidebar-role-badge');
   if (roleBadge) {
     roleBadge.textContent = isAdmin ? 'Admin' : 'Faculty';
@@ -2893,9 +2906,11 @@ function renderFeesTable() {
       <td><span class="badge ${badge}">${status}</span></td>
       <td>
         <div style="display:flex;gap:4px;">
-          <button class="btn btn-ghost" style="padding:4px;" onclick="openPaymentModalForStudent('${s.id}')" title="Record payment">
-            <span class="material-symbols-outlined" style="font-size:16px;color:#10B981;">add_card</span>
-          </button>
+          ${(currentUser && (currentUser.role === 'admin' || currentUser.email === HARDCODED_ADMIN.email)) ? `
+            <button class="btn btn-ghost" style="padding:4px;" onclick="openPaymentModalForStudent('${s.id}')" title="Record payment">
+              <span class="material-symbols-outlined" style="font-size:16px;color:#10B981;">add_card</span>
+            </button>
+          ` : ''}
           <button class="btn btn-ghost" style="padding:4px;" onclick="openStudentDrawer('${s.id}')" title="View profile">
             <span class="material-symbols-outlined" style="font-size:16px;color:#2563EB;">person</span>
           </button>
@@ -2956,7 +2971,15 @@ function toggleFeeStructure() {
   }
 }
 
+function isCurrentUserAdmin() {
+  return currentUser && (currentUser.role === 'admin' || currentUser.email === HARDCODED_ADMIN.email);
+}
+
 function openPaymentModal() {
+  if (!isCurrentUserAdmin()) {
+    showToast('Access Denied: Only administrators can record or edit fee payments.', 'error');
+    return;
+  }
   const students = getStudents();
   const sel = document.getElementById('pay-student');
   sel.innerHTML = '<option value="">Choose a student...</option>';
@@ -2973,6 +2996,10 @@ function openPaymentModal() {
 }
 
 function openPaymentModalForStudent(id) {
+  if (!isCurrentUserAdmin()) {
+    showToast('Access Denied: Only administrators can record or edit fee payments.', 'error');
+    return;
+  }
   openPaymentModal();
   setTimeout(() => {
     const sel = document.getElementById('pay-student');
@@ -2994,6 +3021,10 @@ function onPayStudentChange() {
 }
 
 function recordPayment() {
+  if (!isCurrentUserAdmin()) {
+    showToast('Access Denied: Only administrators can record or edit fee payments.', 'error');
+    return;
+  }
   const id = document.getElementById('pay-student').value;
   const amount = parseFloat(document.getElementById('pay-amount').value);
   const mode = document.getElementById('pay-mode').value;
