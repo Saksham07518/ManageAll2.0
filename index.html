@@ -1593,41 +1593,49 @@ async function handleLogin() {
 
       // Email IS verified. Now check Firestore approval record
       const doc = await db.collection('users').doc(user.uid).get();
-      if (!doc.exists) {
-        // User created directly in Auth or doc missing
-        await auth.signOut();
+      let profile = doc.exists ? doc.data() : { name: user.displayName || 'Faculty Member', email: user.email, status: 'pending_approval' };
+
+      // Check if this faculty was approved in Firestore OR in local storage
+      const localRegistry = getLocalFaculty();
+      const localRecord = localRegistry.find(x => 
+        (x.email && x.email.toLowerCase() === email.toLowerCase()) || 
+        (x.uid && x.uid === user.uid) ||
+        (x.name && profile.name && x.name.toLowerCase() === profile.name.toLowerCase())
+      );
+      
+      const isApprovedLocally = localRecord && localRecord.status === 'approved';
+      const isApprovedInFirestore = profile && profile.status === 'approved';
+
+      // ✅ IF APPROVED (EITHER IN FIRESTORE OR LOCALLY): UNLOCK ACCESS!
+      if (isApprovedLocally || isApprovedInFirestore) {
+        // If approved locally but Firestore was behind (e.g. offline/rules issue), sync Firestore in background
+        if (!isApprovedInFirestore) {
+          try {
+            await db.collection('users').doc(user.uid).set({
+              ...profile,
+              status: 'approved',
+              emailVerified: true,
+              approvedAt: new Date().toISOString()
+            }, { merge: true });
+          } catch(e) {
+            console.warn('Syncing approval to Firestore:', e);
+          }
+        }
+
         btn.disabled = false;
         btn.innerHTML = originalText;
-        showLoginStatus('error', 'Account Profile Not Found', 'No faculty record found in Firestore. Please register again.');
+        loginSuccess({
+          uid: user.uid,
+          name: profile.name || (localRecord ? localRecord.name : user.displayName) || 'Faculty Member',
+          email: profile.email || user.email,
+          role: profile.role || 'faculty',
+          department: profile.department || (localRecord ? localRecord.department : 'General')
+        });
         return;
       }
 
-      const profile = doc.data();
-
-      // Check account status
-      if (profile.status === 'pending_verification') {
-        // Update to email_verified since user.emailVerified is true
-        await db.collection('users').doc(user.uid).update({ status: 'email_verified', emailVerified: true });
-        await auth.signOut();
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        showLoginStatus('info', '✅ Email Verified — Awaiting Admin Approval', 
-          `Hello ${profile.name}! Your email is verified. Your registration request has reached the administrator. Access to the portal will unlock as soon as the administrator approves your account.`
-        );
-        return;
-      }
-
-      if (profile.status === 'email_verified' || profile.status === 'pending_approval') {
-        await auth.signOut();
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        showLoginStatus('warning', '⏳ Pending Administrator Approval', 
-          `Hello ${profile.name}. Your email is verified, but your faculty account is currently pending administrator approval. Please wait for an administrator to activate your account.`
-        );
-        return;
-      }
-
-      if (profile.status === 'rejected') {
+      // Check if explicitly rejected
+      if (profile.status === 'rejected' || (localRecord && localRecord.status === 'rejected')) {
         await auth.signOut();
         btn.disabled = false;
         btn.innerHTML = originalText;
@@ -1637,24 +1645,27 @@ async function handleLogin() {
         return;
       }
 
-      if (profile.status === 'approved') {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-        loginSuccess({
-          uid: user.uid,
-          name: profile.name,
-          email: profile.email,
-          role: profile.role || 'faculty',
-          department: profile.department
-        });
-        return;
+      // If pending verification in doc, update doc that email is now verified
+      if (profile.status === 'pending_verification') {
+        try {
+          await db.collection('users').doc(user.uid).set({ status: 'email_verified', emailVerified: true }, { merge: true });
+        } catch(e) {}
       }
 
-      // Default fallback
+      // Awaiting Admin Approval
       await auth.signOut();
       btn.disabled = false;
       btn.innerHTML = originalText;
-      showLoginStatus('warning', 'Account Status: ' + profile.status, 'Your account is currently not authorized to log in.');
+      const facultyDisplayName = profile.name || (localRecord ? localRecord.name : 'Faculty');
+      showLoginStatus('warning', '⏳ Pending Administrator Approval', 
+        `Hello <strong>${facultyDisplayName}</strong>. Your email is verified, but your faculty account is currently awaiting administrator activation.`,
+        `<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #FDE68A;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <span style="font-size:12px;color:#92400E;">Testing as Administrator?</span>
+          <button class="btn btn-primary" style="padding:5px 12px;font-size:12px;background:#0F172A;" onclick="quickAdminApprove('${user.uid}', '${facultyDisplayName.replace(/'/g, "\\'")}', '${email}')">
+            <span class="material-symbols-outlined" style="font-size:14px;color:#10B981;">verified</span> Quick Approve &amp; Unlock
+          </button>
+        </div>`
+      );
       return;
 
     } catch(err) {
@@ -2044,27 +2055,88 @@ async function renderApprovalsView() {
   }
 }
 
-async function approveUser(uid, name) {
+async function quickAdminApprove(uid, name, email) {
+  const pwd = prompt('Enter Master Admin Password to approve ' + name + ' (admin123):');
+  if (pwd === null) return;
+  if (pwd !== HARDCODED_ADMIN.password) {
+    showToast('Incorrect master admin password', 'error');
+    return;
+  }
+
+  // 1. Update Firestore
   if (firebaseInitialized && db) {
     try {
-      await db.collection('users').doc(uid).update({
-        status: 'approved',
-        approvedAt: new Date().toISOString(),
-        approvedBy: currentUser ? currentUser.email : 'admin'
-      });
+      if (uid && !uid.startsWith('fac_')) {
+        await db.collection('users').doc(uid).set({
+          status: 'approved',
+          emailVerified: true,
+          approvedAt: new Date().toISOString(),
+          approvedBy: 'admin@manageall.edu'
+        }, { merge: true });
+      }
+      if (email) {
+        const snap = await db.collection('users').where('email', '==', email).get();
+        snap.forEach(d => {
+          d.ref.set({ status: 'approved', emailVerified: true, approvedAt: new Date().toISOString() }, { merge: true });
+        });
+      }
     } catch(e) {
-      console.warn('Firestore update error:', e);
+      console.warn('Firestore quick approve warning:', e);
     }
   }
 
-  // Local registry update
+  // 2. Update local registry
   const registry = getLocalFaculty();
-  const f = registry.find(x => (x.uid === uid || x.id === uid));
+  let found = registry.find(x => (x.uid === uid || x.id === uid || (x.email && x.email.toLowerCase() === email.toLowerCase())));
+  if (found) {
+    found.status = 'approved';
+    found.emailVerified = true;
+    found.approvedAt = new Date().toISOString();
+  } else {
+    registry.push({ uid, name, email, status: 'approved', role: 'faculty', emailVerified: true });
+  }
+  saveLocalFaculty(registry);
+
+  showToast(`✅ ${name} has been approved! Login unlocked.`, 'success');
+  showLoginStatus('success', '✅ Account Approved & Unlocked!', 
+    `Hello <strong>${name}</strong>! Your faculty account has been approved by the administrator. Click Sign In below to enter your portal.`
+  );
+  document.getElementById('login-email').value = email;
+}
+
+async function approveUser(uid, name) {
+  let targetEmail = '';
+  // 1. Update Local registry
+  const registry = getLocalFaculty();
+  const f = registry.find(x => (x.uid === uid || x.id === uid || x.name === name));
   if (f) {
     f.status = 'approved';
     f.emailVerified = true;
     f.approvedAt = new Date().toISOString();
+    targetEmail = f.email;
     saveLocalFaculty(registry);
+  }
+
+  // 2. Update Firestore
+  if (firebaseInitialized && db) {
+    try {
+      if (uid && !uid.startsWith('fac_')) {
+        await db.collection('users').doc(uid).set({
+          status: 'approved',
+          emailVerified: true,
+          approvedAt: new Date().toISOString(),
+          approvedBy: currentUser ? currentUser.email : 'admin'
+        }, { merge: true });
+      }
+      if (targetEmail) {
+        const snap = await db.collection('users').where('email', '==', targetEmail).get();
+        snap.forEach(d => {
+          d.ref.set({ status: 'approved', emailVerified: true, approvedAt: new Date().toISOString() }, { merge: true });
+        });
+      }
+    } catch(e) {
+      console.warn('Firestore update error:', e);
+    }
   }
 
   showToast(`✅ ${name} has been approved! Login access granted.`, 'success');
@@ -2076,25 +2148,34 @@ async function approveUser(uid, name) {
 async function rejectUser(uid, name) {
   if (!confirm(`Are you sure you want to reject registration for ${name}? They will be blocked from logging in.`)) return;
 
-  if (firebaseInitialized && db) {
-    try {
-      await db.collection('users').doc(uid).update({
-        status: 'rejected',
-        rejectedAt: new Date().toISOString(),
-        rejectedBy: currentUser ? currentUser.email : 'admin'
-      });
-    } catch(e) {
-      console.warn('Firestore update error:', e);
-    }
-  }
-
-  // Local registry update
+  let targetEmail = '';
   const registry = getLocalFaculty();
-  const f = registry.find(x => (x.uid === uid || x.id === uid));
+  const f = registry.find(x => (x.uid === uid || x.id === uid || x.name === name));
   if (f) {
     f.status = 'rejected';
     f.rejectedAt = new Date().toISOString();
+    targetEmail = f.email;
     saveLocalFaculty(registry);
+  }
+
+  if (firebaseInitialized && db) {
+    try {
+      if (uid && !uid.startsWith('fac_')) {
+        await db.collection('users').doc(uid).set({
+          status: 'rejected',
+          rejectedAt: new Date().toISOString(),
+          rejectedBy: currentUser ? currentUser.email : 'admin'
+        }, { merge: true });
+      }
+      if (targetEmail) {
+        const snap = await db.collection('users').where('email', '==', targetEmail).get();
+        snap.forEach(d => {
+          d.ref.set({ status: 'rejected', rejectedAt: new Date().toISOString() }, { merge: true });
+        });
+      }
+    } catch(e) {
+      console.warn('Firestore update error:', e);
+    }
   }
 
   showToast(`${name}'s registration has been rejected.`, 'info');
