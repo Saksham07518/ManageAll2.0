@@ -69,6 +69,12 @@ service cloud.firestore {
       );
     }
     
+    // Student admission applications (public applicants can submit; faculty/admin can review & approve)
+    match /student_admissions/{admissionId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+
     // Default rule for attendance, fees, and students
     match /{document=**} {
       allow read, write: if request.auth != null;

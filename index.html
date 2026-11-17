@@ -203,15 +203,109 @@
     /* Login */
     #app-login { min-height: 100vh; background: #F8FAFC; display: flex; align-items: center; justify-content: center; }
     .login-left { background: #0F172A; border-radius: 12px 0 0 12px; overflow: hidden; }
-    .tab-btn { padding: 10px 20px; font-weight: 600; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; color: #94A3B8; transition: all 0.15s; }
+    .tab-btn { padding: 10px 16px; font-weight: 600; font-size: 13.5px; cursor: pointer; border-bottom: 2px solid transparent; color: #94A3B8; transition: all 0.15s; white-space: nowrap; flex-shrink: 0; }
     .tab-btn.active { color: #2563EB; border-bottom-color: #2563EB; }
+    .login-tabs-wrap { display: flex; border-bottom: 1px solid #E2E8F0; margin-bottom: 20px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .login-tabs-wrap::-webkit-scrollbar { display: none; }
+
+    /* Responsive Grid Utilities */
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
     /* Responsive */
+    @media (max-width: 900px) {
+      #att-main-layout { grid-template-columns: 1fr !important; gap: 16px !important; }
+    }
+
     @media (max-width: 768px) {
-      #sidebar { position: fixed; left: -240px; z-index: 100; height: 100vh; transition: left 0.25s; }
-      #sidebar.mobile-open { left: 0; }
-      .login-left { display: none; }
-      .login-card { border-radius: 12px; }
+      #sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: -270px !important;
+        z-index: 1000 !important;
+        height: 100vh !important;
+        width: 270px !important;
+        min-width: 270px !important;
+        transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 4px 0 28px rgba(0,0,0,0.4) !important;
+      }
+      #sidebar.mobile-open {
+        left: 0 !important;
+      }
+      .login-container {
+        flex-direction: column !important;
+        margin: 12px auto !important;
+        width: 94% !important;
+        min-height: auto !important;
+        box-shadow: 0 4px 20px rgba(15,23,42,0.08) !important;
+      }
+      .login-left {
+        display: none !important;
+      }
+      .login-card {
+        padding: 22px 16px !important;
+        border-radius: 12px !important;
+      }
+      .form-grid-2 {
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+      }
+      header {
+        padding: 0 12px !important;
+        height: 56px !important;
+      }
+      main {
+        padding: 14px 12px !important;
+      }
+      #header-username {
+        display: none !important;
+      }
+      #page-title {
+        font-size: 16px !important;
+      }
+      .tab-btn {
+        padding: 9px 12px !important;
+        font-size: 13px !important;
+      }
+      #drawer-student-detail {
+        width: 100vw !important;
+        right: -100vw !important;
+      }
+      .modal-box {
+        width: 95% !important;
+        max-height: 94vh !important;
+        margin: 10px !important;
+      }
+      .modal-header, .modal-footer {
+        padding: 12px 16px !important;
+      }
+      .modal-body {
+        padding: 16px !important;
+      }
+      #toast-container {
+        bottom: 14px !important;
+        right: 12px !important;
+        left: 12px !important;
+      }
+      .toast {
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .kpi-card {
+        padding: 16px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login-card h3 {
+        font-size: 19px !important;
+      }
+      .search-wrap {
+        width: 100% !important;
+      }
+      .search-wrap input {
+        width: 100% !important;
+      }
     }
 
     /* Expandable row */
@@ -271,7 +365,7 @@
     </div>
   </div>
 
-  <div style="max-width:960px;width:100%;margin:36px auto 24px;border-radius:12px;overflow:hidden;box-shadow:0 24px 64px rgba(15,23,42,0.18);display:flex;min-height:580px;">
+  <div class="login-container" style="max-width:960px;width:100%;margin:36px auto 24px;border-radius:12px;overflow:hidden;box-shadow:0 24px 64px rgba(15,23,42,0.18);display:flex;min-height:580px;">
     <!-- Left Panel -->
     <div class="login-left flex flex-col justify-between p-10" style="flex:1;background:linear-gradient(135deg,#0F172A 0%,#1E3A6E 100%);position:relative;">
       <div style="position:absolute;inset:0;background:url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 400 400\"><defs><radialGradient id=\"g\" cx=\"50%\" cy=\"50%\" r=\"70%\"><stop offset=\"0%\" stop-color=\"%232563EB\" stop-opacity=\"0.3\"/><stop offset=\"100%\" stop-color=\"%230F172A\" stop-opacity=\"0\"/></radialGradient></defs><rect width=\"400\" height=\"400\" fill=\"url(%23g)\"/></svg>') center/cover no-repeat; opacity:0.7;"></div>
@@ -309,14 +403,15 @@
     <!-- Right Panel -->
     <div style="flex:1.15;background:#fff;padding:36px;display:flex;flex-direction:column;justify-content:center;" class="login-card">
       <div style="margin-bottom:18px;">
-        <h3 style="font-family:'Hanken Grotesk',sans-serif;font-size:22px;font-weight:700;color:#0F172A;margin-bottom:4px;">Portal Authentication</h3>
-        <p style="color:#64748B;font-size:13.5px;">Sign in to your account or register as new faculty</p>
+        <h3 id="login-header-title" style="font-family:'Hanken Grotesk',sans-serif;font-size:22px;font-weight:700;color:#0F172A;margin-bottom:4px;">Portal Authentication</h3>
+        <p id="login-header-subtitle" style="color:#64748B;font-size:13.5px;">Sign in to your account or register as new faculty</p>
       </div>
 
       <!-- Tabs -->
-      <div style="display:flex;border-bottom:1px solid #E2E8F0;margin-bottom:20px;">
+      <div class="login-tabs-wrap" style="display:flex;border-bottom:1px solid #E2E8F0;margin-bottom:20px;overflow-x:auto;-webkit-overflow-scrolling:touch;">
         <button class="tab-btn active" onclick="switchLoginTab('signin')" id="tab-signin">Sign In</button>
-        <button class="tab-btn" onclick="switchLoginTab('register')" id="tab-register">Faculty Registration</button>
+        <button class="tab-btn" onclick="switchLoginTab('register')" id="tab-register">Faculty Register</button>
+        <button class="tab-btn" onclick="switchLoginTab('student')" id="tab-student">Student Admission</button>
       </div>
 
       <!-- Dynamic Status / Alert Box -->
@@ -355,7 +450,7 @@
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-grid-2">
           <div class="form-group" style="margin-bottom:12px;">
             <label class="form-label">Full Name *</label>
             <input type="text" id="reg-name" class="form-input" placeholder="Prof. Jane Doe" />
@@ -379,7 +474,7 @@
           <input type="email" id="reg-email" class="form-input" placeholder="jane.doe@gmail.com or j.doe@apex.edu" />
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-grid-2">
           <div class="form-group" style="margin-bottom:12px;">
             <label class="form-label">Create Password *</label>
             <input type="password" id="reg-password" class="form-input" placeholder="Min 6 characters" />
@@ -394,12 +489,103 @@
           <span class="material-symbols-outlined">how_to_reg</span> Submit Registration &amp; Send Verification
         </button>
       </div>
+
+      <!-- Student Admission Registration Form -->
+      <div id="login-student-form" style="display:none;">
+        <div id="st-form-inputs-container">
+          <div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:10px 12px;margin-bottom:14px;display:flex;gap:8px;align-items:flex-start;">
+            <span class="material-symbols-outlined" style="color:#10B981;flex-shrink:0;font-size:18px;margin-top:1px;">school</span>
+            <div style="font-size:12.5px;color:#065F46;line-height:1.4;">
+              <strong>New Student Admission:</strong> Complete your details below. Your application will be automatically routed to your assigned course faculty mentor for admission approval.
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group" style="margin-bottom:10px;">
+              <label class="form-label">Full Name *</label>
+              <input type="text" id="st-reg-name" class="form-input" placeholder="e.g. Rahul Sharma" />
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+              <label class="form-label">Roll Number</label>
+              <input type="text" id="st-reg-roll" class="form-input" placeholder="Auto-generated or custom" />
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group" style="margin-bottom:10px;">
+              <label class="form-label">Course Program *</label>
+              <select id="st-reg-course" class="form-input" onchange="updateAllottedFacultyPreview()">
+                <option value="">Select Course</option>
+                <option value="BCA">BCA (Computer Applications)</option>
+                <option value="BBA">BBA (Business Administration)</option>
+                <option value="B.Com">B.Com (Commerce)</option>
+                <option value="BSc">BSc (Science)</option>
+                <option value="BE">BE (Engineering)</option>
+                <option value="MBA">MBA (Management)</option>
+                <option value="MCA">MCA (Master Computer App)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+              <label class="form-label">Semester *</label>
+              <select id="st-reg-semester" class="form-input">
+                <option>1</option><option>2</option><option>3</option><option>4</option>
+                <option>5</option><option>6</option><option>7</option><option>8</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group" style="margin-bottom:10px;">
+              <label class="form-label">Student Phone *</label>
+              <input type="tel" id="st-reg-phone" class="form-input" placeholder="10-digit mobile" />
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+              <label class="form-label">Student Email *</label>
+              <input type="email" id="st-reg-email" class="form-input" placeholder="student@email.com" />
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group" style="margin-bottom:10px;">
+              <label class="form-label">Guardian / Parent Name *</label>
+              <input type="text" id="st-reg-guardian" class="form-input" placeholder="Parent or guardian" />
+            </div>
+            <div class="form-group" style="margin-bottom:10px;">
+              <label class="form-label">Guardian Phone *</label>
+              <input type="tel" id="st-reg-guardian-phone" class="form-input" placeholder="Guardian contact" />
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">Residential Address *</label>
+            <input type="text" id="st-reg-address" class="form-input" placeholder="House no, Street, City, State, PIN" />
+          </div>
+
+          <!-- Dynamic Auto-Allotment Box -->
+          <div id="st-faculty-allotment-box" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:10px 12px;margin-bottom:14px;font-size:12.5px;color:#1E40AF;">
+            <div style="font-weight:700;display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+              <span class="material-symbols-outlined" style="font-size:16px;">assignment_ind</span>
+              <span id="st-allotted-dept-title">Auto-Allotted Faculty Mentor</span>
+            </div>
+            <div id="st-allotted-faculty-desc" style="color:#2563EB;">Selecting course...</div>
+          </div>
+
+          <button id="btn-st-reg-submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;font-size:14px;" onclick="handleStudentAdmissionSubmit()">
+            <span class="material-symbols-outlined">send</span> Submit Admission Application
+          </button>
+        </div>
+
+        <!-- Success Message Container -->
+        <div id="st-form-success-container" style="display:none;"></div>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- ==================== MAIN APP ==================== -->
-<div id="app-main" class="hidden" style="display:none;flex:1;height:100vh;overflow:hidden;flex-direction:row;">
+<div id="app-main" class="hidden" style="display:none;flex:1;height:100vh;overflow:hidden;flex-direction:row;position:relative;">
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div id="sidebar-backdrop" onclick="toggleSidebar()" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(3px);z-index:999;transition:opacity 0.25s;"></div>
   <!-- SIDEBAR -->
   <aside id="sidebar" class="flex flex-col h-full">
     <!-- Logo -->
@@ -430,6 +616,11 @@
       <div class="nav-item" onclick="showView('reports')" id="nav-reports">
         <span class="material-symbols-outlined">bar_chart</span>
         <span class="nav-label">Reports</span>
+      </div>
+      <div class="nav-item" onclick="showView('admissions')" id="nav-admissions" style="position:relative;">
+        <span class="material-symbols-outlined">person_add_alt</span>
+        <span class="nav-label">Admissions</span>
+        <span id="admissions-badge" class="badge badge-amber" style="display:none;position:absolute;right:10px;min-width:18px;height:18px;border-radius:9999px;font-size:10.5px;padding:0 5px;justify-content:center;">0</span>
       </div>
       <div class="nav-item" onclick="showView('approvals')" id="nav-approvals" style="display:none;position:relative;">
         <span class="material-symbols-outlined">how_to_reg</span>
@@ -1037,6 +1228,90 @@
               </thead>
               <tbody id="all-faculty-tbody">
                 <tr><td colspan="7" style="text-align:center;color:#94A3B8;padding:24px;">Loading faculty data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== STUDENT ADMISSIONS VIEW (FACULTY & ADMIN) ==================== -->
+      <div id="view-admissions" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h2 style="font-family:'Hanken Grotesk',sans-serif;font-size:22px;font-weight:700;color:#0F172A;">Student Admission Approvals</h2>
+            <p style="color:#64748B;font-size:14px;margin-top:2px;">Review student applications auto-allotted to your course. Approved students are enrolled directly into your active class roster.</p>
+          </div>
+          <button class="btn btn-primary" onclick="renderAdmissionsView()">
+            <span class="material-symbols-outlined">refresh</span> Refresh Applications
+          </button>
+        </div>
+
+        <!-- Metric KPI Cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+          <div class="kpi-card" style="border-left:4px solid #F59E0B;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;">Pending Approvals</span>
+              <span class="material-symbols-outlined" style="color:#F59E0B;">pending</span>
+            </div>
+            <div id="admissions-count-pending" style="font-family:'Hanken Grotesk',sans-serif;font-size:28px;font-weight:700;color:#0F172A;">0</div>
+            <p style="font-size:12px;color:#64748B;margin-top:4px;">Awaiting faculty approval</p>
+          </div>
+
+          <div class="kpi-card" style="border-left:4px solid #10B981;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;">Approved &amp; Enrolled</span>
+              <span class="material-symbols-outlined" style="color:#10B981;">how_to_reg</span>
+            </div>
+            <div id="admissions-count-approved" style="font-family:'Hanken Grotesk',sans-serif;font-size:28px;font-weight:700;color:#10B981;">0</div>
+            <p style="font-size:12px;color:#64748B;margin-top:4px;">Active students</p>
+          </div>
+
+          <div class="kpi-card" style="border-left:4px solid #2563EB;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span style="font-size:12px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.04em;">Total Applicants</span>
+              <span class="material-symbols-outlined" style="color:#2563EB;">assignment</span>
+            </div>
+            <div id="admissions-count-total" style="font-family:'Hanken Grotesk',sans-serif;font-size:28px;font-weight:700;color:#2563EB;">0</div>
+            <p style="font-size:12px;color:#64748B;margin-top:4px;">Submitted applications</p>
+          </div>
+        </div>
+
+        <!-- Pending Applications Section -->
+        <div style="background:#fff;border:1px solid #F1F5F9;border-radius:8px;overflow:hidden;margin-bottom:24px;">
+          <div style="padding:16px 20px;border-bottom:1px solid #F1F5F9;background:#FAFAFD;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="material-symbols-outlined" style="color:#2563EB;">school</span>
+              <span style="font-weight:700;color:#0F172A;font-size:15px;">Pending Student Admission Applications</span>
+            </div>
+            <span id="admissions-pending-label" class="badge badge-amber">0 pending</span>
+          </div>
+          <div id="admissions-pending-list" style="padding:16px;display:flex;flex-direction:column;gap:14px;min-height:100px;">
+            <div style="text-align:center;color:#94A3B8;padding:30px;">Loading student applications...</div>
+          </div>
+        </div>
+
+        <!-- All Student Applications History Table -->
+        <div style="background:#fff;border:1px solid #F1F5F9;border-radius:8px;overflow:hidden;">
+          <div style="padding:16px 20px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-weight:700;color:#0F172A;font-size:15px;">Admission Applications Log</div>
+            <span style="font-size:12.5px;color:#64748B;">Synced with Firebase</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Student Name</th>
+                  <th>Roll No</th>
+                  <th>Course &amp; Sem</th>
+                  <th>Contact</th>
+                  <th>Guardian Info</th>
+                  <th>Allotted Faculty / Dept</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="all-admissions-tbody">
+                <tr><td colspan="8" style="text-align:center;color:#94A3B8;padding:24px;">Loading admissions log...</td></tr>
               </tbody>
             </table>
           </div>
@@ -1902,6 +2177,7 @@ function loginSuccess(user) {
   if (isAdmin) {
     updateApprovalsBadge();
   }
+  updateAdmissionsBadge();
   showView('dashboard');
   showToast('Welcome back, ' + (user.name || 'User') + '! 👋', 'success');
 }
@@ -1924,8 +2200,27 @@ async function handleLogout() {
 function switchLoginTab(tab) {
   document.getElementById('tab-signin').classList.toggle('active', tab === 'signin');
   document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+  const stTab = document.getElementById('tab-student');
+  if (stTab) stTab.classList.toggle('active', tab === 'student');
   document.getElementById('login-signin-form').style.display = tab === 'signin' ? '' : 'none';
   document.getElementById('login-register-form').style.display = tab === 'register' ? '' : 'none';
+  const stForm = document.getElementById('login-student-form');
+  if (stForm) stForm.style.display = tab === 'student' ? '' : 'none';
+
+  const title = document.getElementById('login-header-title');
+  const sub = document.getElementById('login-header-subtitle');
+  if (title && sub) {
+    if (tab === 'signin') {
+      title.textContent = 'Portal Authentication';
+      sub.textContent = 'Sign in to your account or register as new faculty';
+    } else if (tab === 'register') {
+      title.textContent = 'Faculty Registration';
+      sub.textContent = 'Apply for verified faculty access to ManageAll';
+    } else if (tab === 'student') {
+      title.textContent = 'Student Admission';
+      sub.textContent = 'Register for course admission & auto-mentor allocation';
+    }
+  }
 }
 
 // ============================================================
@@ -2197,10 +2492,455 @@ async function rejectUser(uid, name) {
 }
 
 // ============================================================
+//  STUDENT ADMISSION & AUTO-ALLOTMENT WORKFLOW
+// ============================================================
+const COURSE_DEPARTMENTS = {
+  'BCA': 'Computer Science & AI',
+  'MCA': 'Computer Science & AI',
+  'BE': 'Electrical Engineering',
+  'BBA': 'Business Administration',
+  'MBA': 'Business Administration',
+  'BSc': 'Biomedical Sciences',
+  'B.Com': 'Business Administration'
+};
+
+function getLocalStudentAdmissions() {
+  return JSON.parse(localStorage.getItem('ma_student_admissions') || '[]');
+}
+function saveLocalStudentAdmissions(arr) {
+  localStorage.setItem('ma_student_admissions', JSON.stringify(arr));
+}
+
+function getAssignedFacultyForCourse(course) {
+  const targetDept = COURSE_DEPARTMENTS[course] || 'Computer Science & AI';
+  const facultyList = getLocalFaculty().filter(f => f.status === 'approved');
+  // Match by department first
+  const match = facultyList.find(f => f.department === targetDept);
+  if (match) return match;
+  // If registered approved faculty exists
+  if (facultyList.length > 0) return facultyList[0];
+  // Default institutional mentor
+  return { 
+    name: 'Prof. Saksham Mishra (Head Faculty Mentor)', 
+    email: 'faculty@manageall.edu', 
+    department: targetDept 
+  };
+}
+
+function updateAllottedFacultyPreview() {
+  const course = document.getElementById('st-reg-course').value;
+  const box = document.getElementById('st-faculty-allotment-box');
+  const desc = document.getElementById('st-allotted-faculty-desc');
+  const rollInput = document.getElementById('st-reg-roll');
+  if (!course) {
+    box.style.display = 'none';
+    return;
+  }
+  const faculty = getAssignedFacultyForCourse(course);
+  box.style.display = 'block';
+  desc.innerHTML = `
+    <div style="font-size:13px;font-weight:600;color:#1E3A8A;">👨‍🏫 Mentor: ${faculty.name}</div>
+    <div style="font-size:12px;color:#3B82F6;">Department: ${faculty.department} &bull; <span style="font-family:'JetBrains Mono',monospace;">${faculty.email}</span></div>
+    <div style="font-size:11.5px;color:#475569;margin-top:4px;">Upon submission, this application will appear directly in this faculty mentor's dashboard for admission approval.</div>
+  `;
+  if (!rollInput.value) {
+    rollInput.placeholder = generateRollNo(course) + ' (Suggested)';
+  }
+}
+
+async function handleStudentAdmissionSubmit() {
+  const name = document.getElementById('st-reg-name').value.trim();
+  let roll = document.getElementById('st-reg-roll').value.trim();
+  const course = document.getElementById('st-reg-course').value;
+  const semester = document.getElementById('st-reg-semester').value;
+  const phone = document.getElementById('st-reg-phone').value.trim();
+  const email = document.getElementById('st-reg-email').value.trim();
+  const guardian = document.getElementById('st-reg-guardian').value.trim();
+  const guardianPhone = document.getElementById('st-reg-guardian-phone').value.trim();
+  const address = document.getElementById('st-reg-address').value.trim();
+
+  if (!name || !course || !semester || !phone || !email || !guardian || !guardianPhone || !address) {
+    showToast('Please fill out all required fields marked *', 'error');
+    return;
+  }
+
+  if (!roll) {
+    roll = generateRollNo(course);
+  }
+
+  const faculty = getAssignedFacultyForCourse(course);
+  const admissionId = 'adm_' + Date.now();
+
+  const appData = {
+    id: admissionId,
+    name,
+    roll,
+    course,
+    semester,
+    phone,
+    email,
+    guardian,
+    guardianPhone,
+    address,
+    admissionDate: todayString(),
+    assignedDepartment: faculty.department,
+    assignedFacultyName: faculty.name,
+    assignedFacultyEmail: faculty.email,
+    status: 'pending_faculty_approval',
+    submittedAt: new Date().toISOString()
+  };
+
+  // 1. Firebase Firestore sync
+  if (firebaseInitialized && db) {
+    try {
+      await db.collection('student_admissions').doc(admissionId).set(appData);
+    } catch(e) {
+      console.warn('Firestore admission save notice:', e);
+    }
+  }
+
+  // 2. Local storage sync
+  const admissions = getLocalStudentAdmissions();
+  admissions.push(appData);
+  saveLocalStudentAdmissions(admissions);
+
+  // Success UI Screen
+  const inputsContainer = document.getElementById('st-form-inputs-container');
+  const successContainer = document.getElementById('st-form-success-container');
+  if (inputsContainer && successContainer) {
+    inputsContainer.style.display = 'none';
+    successContainer.style.display = 'block';
+    successContainer.innerHTML = `
+      <div style="text-align:center;padding:16px 6px;">
+        <div style="width:64px;height:64px;background:#F0FDF4;border:2px solid #86EFAC;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+          <span class="material-symbols-outlined" style="font-size:36px;color:#10B981;">task_alt</span>
+        </div>
+        <h3 style="font-family:'Hanken Grotesk',sans-serif;font-size:19px;font-weight:700;color:#0F172A;margin-bottom:6px;">Admission Application Submitted!</h3>
+        <p style="color:#64748B;font-size:13px;line-height:1.5;margin-bottom:16px;">
+          Thank you, <strong>${name}</strong>!<br>
+          Your application for <strong>${course} (Semester ${semester})</strong> has been received.
+        </p>
+
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:14px;text-align:left;margin-bottom:18px;">
+          <div style="font-weight:700;color:#1E40AF;font-size:13px;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+            <span class="material-symbols-outlined" style="font-size:16px;">assignment_ind</span>
+            Auto-Allotted Course Faculty Reviewer:
+          </div>
+          <div style="font-size:13px;color:#1E3A8A;display:flex;flex-direction:column;gap:3px;">
+            <div>👨‍🏫 <strong>${faculty.name}</strong></div>
+            <div>🏛️ Department: ${faculty.department}</div>
+            <div>📧 Email: <span style="font-family:'JetBrains Mono',monospace;">${faculty.email}</span></div>
+            <div>🆔 Assigned Roll No: <strong style="font-family:'JetBrains Mono',monospace;color:#2563EB;">${roll}</strong></div>
+          </div>
+          <p style="margin-top:10px;font-size:12px;color:#475569;line-height:1.45;border-top:1px dashed #BFDBFE;padding-top:8px;">
+            Your course faculty mentor will review your admission dossier. Once approved, your student account will be officially activated in the active class roster!
+          </p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button onclick="resetStudentAdmissionForm()" class="btn btn-outline" style="width:100%;justify-content:center;padding:10px;">
+            <span class="material-symbols-outlined">person_add</span> Submit Another Admission Form
+          </button>
+          <button onclick="switchLoginTab('signin')" class="btn btn-primary" style="width:100%;justify-content:center;padding:10px;">
+            <span class="material-symbols-outlined">login</span> Return to Sign In Window
+          </button>
+        </div>
+      </div>
+    `;
+  }
+  showToast('Admission application submitted! Routed to faculty mentor.', 'success');
+}
+
+function resetStudentAdmissionForm() {
+  const inputsContainer = document.getElementById('st-form-inputs-container');
+  const successContainer = document.getElementById('st-form-success-container');
+  if (inputsContainer && successContainer) {
+    document.getElementById('st-reg-name').value = '';
+    document.getElementById('st-reg-roll').value = '';
+    document.getElementById('st-reg-course').value = '';
+    document.getElementById('st-reg-semester').value = '1';
+    document.getElementById('st-reg-phone').value = '';
+    document.getElementById('st-reg-email').value = '';
+    document.getElementById('st-reg-guardian').value = '';
+    document.getElementById('st-reg-guardian-phone').value = '';
+    document.getElementById('st-reg-address').value = '';
+    const box = document.getElementById('st-faculty-allotment-box');
+    if (box) box.style.display = 'none';
+    inputsContainer.style.display = 'block';
+    successContainer.style.display = 'none';
+  }
+}
+
+async function fetchAllAdmissions() {
+  let list = [];
+  if (firebaseInitialized && db) {
+    try {
+      const snap = await db.collection('student_admissions').get();
+      if (snap && !snap.empty) {
+        list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      }
+    } catch(e) {
+      console.warn('Firestore fetch admissions error:', e);
+    }
+  }
+  const localList = getLocalStudentAdmissions();
+  const map = new Map();
+  list.forEach(item => map.set(item.id, item));
+  localList.forEach(item => {
+    if (!map.has(item.id)) {
+      map.set(item.id, item);
+    } else {
+      const remote = map.get(item.id);
+      if (item.status === 'approved' && remote.status !== 'approved') {
+        map.set(item.id, { ...remote, ...item });
+      }
+    }
+  });
+  return Array.from(map.values());
+}
+
+async function updateAdmissionsBadge() {
+  const allAdmissions = await fetchAllAdmissions();
+  const isAdmin = (currentUser && (currentUser.role === 'admin' || currentUser.email === HARDCODED_ADMIN.email));
+  const currentFacultyDept = currentUser ? currentUser.department : '';
+
+  const relevant = isAdmin ? allAdmissions : allAdmissions.filter(a => {
+    if (!currentFacultyDept) return true;
+    return a.assignedDepartment === currentFacultyDept || 
+           COURSE_DEPARTMENTS[a.course] === currentFacultyDept ||
+           (a.assignedFacultyEmail && currentUser.email && a.assignedFacultyEmail.toLowerCase() === currentUser.email.toLowerCase());
+  });
+
+  const pending = relevant.filter(a => a.status === 'pending_faculty_approval').length;
+  const badge = document.getElementById('admissions-badge');
+  if (badge) {
+    badge.textContent = pending;
+    badge.style.display = pending > 0 ? 'inline-flex' : 'none';
+  }
+}
+
+async function renderAdmissionsView() {
+  const listContainer = document.getElementById('admissions-pending-list');
+  const tbody = document.getElementById('all-admissions-tbody');
+  listContainer.innerHTML = '<div style="text-align:center;color:#94A3B8;padding:24px;"><span class="material-symbols-outlined" style="animation:spin 1s linear infinite;font-size:24px;color:#2563EB;">refresh</span> Loading student applications...</div>';
+
+  const allAdmissions = await fetchAllAdmissions();
+  const isAdmin = (currentUser && (currentUser.role === 'admin' || currentUser.email === HARDCODED_ADMIN.email));
+  const currentFacultyDept = currentUser ? currentUser.department : '';
+
+  const relevant = isAdmin ? allAdmissions : allAdmissions.filter(a => {
+    if (!currentFacultyDept) return true;
+    return a.assignedDepartment === currentFacultyDept || 
+           COURSE_DEPARTMENTS[a.course] === currentFacultyDept ||
+           (a.assignedFacultyEmail && currentUser.email && a.assignedFacultyEmail.toLowerCase() === currentUser.email.toLowerCase());
+  });
+
+  let pending = 0, approved = 0;
+  relevant.forEach(a => {
+    if (a.status === 'approved') approved++;
+    else if (a.status === 'pending_faculty_approval') pending++;
+  });
+
+  document.getElementById('admissions-count-pending').textContent = pending;
+  document.getElementById('admissions-count-approved').textContent = approved;
+  document.getElementById('admissions-count-total').textContent = relevant.length;
+  document.getElementById('admissions-pending-label').textContent = `${pending} pending`;
+
+  // Render Pending Applications Cards
+  const pendingApps = relevant.filter(a => a.status === 'pending_faculty_approval');
+
+  if (!pendingApps.length) {
+    listContainer.innerHTML = `
+      <div style="text-align:center;padding:40px 20px;">
+        <span class="material-symbols-outlined" style="font-size:42px;color:#10B981;">task_alt</span>
+        <h4 style="font-size:16px;font-weight:700;color:#0F172A;margin-top:10px;">All Applications Processed!</h4>
+        <p style="color:#64748B;font-size:13.5px;margin-top:2px;">There are no student admission requests waiting for your approval.</p>
+      </div>
+    `;
+  } else {
+    listContainer.innerHTML = '';
+    pendingApps.forEach(a => {
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#fff;border:1px solid #E2E8F0;border-radius:8px;padding:16px 20px;display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;';
+      card.innerHTML = `
+        <div class="avatar" style="background:${avatarColor(a.name)};color:#fff;width:48px;height:48px;font-size:16px;flex-shrink:0;">${getInitials(a.name)}</div>
+        <div style="flex:1;min-width:260px;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-weight:700;color:#0F172A;font-size:16px;">${a.name}</span>
+            <span class="badge badge-cobalt">${a.course} Sem ${a.semester}</span>
+            <span class="badge badge-navy mono" style="font-size:11px;">${a.roll}</span>
+            <span class="badge badge-amber">Awaiting Faculty Approval</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px;margin-top:8px;font-size:12.5px;color:#475569;">
+            <div><strong>Student Phone:</strong> <span class="mono">${a.phone}</span></div>
+            <div><strong>Student Email:</strong> ${a.email}</div>
+            <div><strong>Guardian:</strong> ${a.guardian} (<span class="mono">${a.guardianPhone}</span>)</div>
+            <div><strong>Address:</strong> ${a.address}</div>
+          </div>
+          <div style="margin-top:6px;font-size:11.5px;color:#2563EB;">
+            Allotted Mentor: <strong>${a.assignedFacultyName || 'Department Mentor'}</strong> (${a.assignedDepartment || a.course})
+            &bull; Applied: ${formatDateTime(a.submittedAt)}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;align-self:center;">
+          <button class="btn btn-primary" onclick="approveStudentAdmission('${a.id}')" style="padding:8px 16px;background:#10B981;">
+            <span class="material-symbols-outlined" style="font-size:16px;">check_circle</span> Approve Admission
+          </button>
+          <button class="btn btn-danger" onclick="rejectStudentAdmission('${a.id}')" style="padding:8px 14px;">
+            <span class="material-symbols-outlined" style="font-size:16px;">cancel</span> Decline
+          </button>
+        </div>
+      `;
+      listContainer.appendChild(card);
+    });
+  }
+
+  // Render Table Log
+  if (!relevant.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94A3B8;padding:24px;">No student applications received yet</td></tr>';
+  } else {
+    tbody.innerHTML = '';
+    relevant.forEach(a => {
+      let stBadge = 'badge-amber';
+      let stLabel = 'Pending Review';
+      if (a.status === 'approved') {
+        stBadge = 'badge-emerald';
+        stLabel = 'Approved & Enrolled';
+      } else if (a.status === 'rejected') {
+        stBadge = 'badge-rose';
+        stLabel = 'Declined';
+      }
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="avatar" style="background:${avatarColor(a.name)};color:#fff;width:28px;height:28px;font-size:11px;">${getInitials(a.name)}</div>
+            <span style="font-weight:600;color:#0F172A;">${a.name}</span>
+          </div>
+        </td>
+        <td class="mono" style="font-size:12px;color:#64748B;">${a.roll}</td>
+        <td><span class="badge badge-cobalt">${a.course} Sem ${a.semester}</span></td>
+        <td style="font-size:12.5px;">${a.phone}<br><span style="font-size:11px;color:#64748B;">${a.email}</span></td>
+        <td style="font-size:12.5px;">${a.guardian}<br><span style="font-size:11px;color:#64748B;" class="mono">${a.guardianPhone}</span></td>
+        <td style="font-size:12px;">${a.assignedFacultyName || 'Faculty'}<br><span style="font-size:11px;color:#64748B;">${a.assignedDepartment || a.course}</span></td>
+        <td><span class="badge ${stBadge}">${stLabel}</span></td>
+        <td>
+          <div style="display:flex;gap:4px;">
+            ${a.status !== 'approved' ? `
+              <button class="btn btn-ghost" onclick="approveStudentAdmission('${a.id}')" title="Approve admission" style="padding:4px;color:#10B981;">
+                <span class="material-symbols-outlined" style="font-size:17px;">check_circle</span>
+              </button>
+            ` : ''}
+            ${a.status !== 'rejected' ? `
+              <button class="btn btn-ghost" onclick="rejectStudentAdmission('${a.id}')" title="Decline application" style="padding:4px;color:#EF4444;">
+                <span class="material-symbols-outlined" style="font-size:17px;">block</span>
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+async function approveStudentAdmission(id) {
+  const allAdmissions = await fetchAllAdmissions();
+  const app = allAdmissions.find(a => a.id === id);
+  if (!app) {
+    showToast('Application not found', 'error');
+    return;
+  }
+
+  // 1. Add student to active student roster
+  const students = getStudents();
+  let roll = app.roll;
+  if (students.some(s => s.roll === roll)) {
+    roll = generateRollNo(app.course);
+  }
+  const newStudentId = 's' + Date.now();
+  const newStudent = {
+    id: newStudentId,
+    roll: roll,
+    name: app.name,
+    course: app.course,
+    semester: app.semester,
+    phone: app.phone,
+    email: app.email,
+    guardian: app.guardian,
+    guardianPhone: app.guardianPhone,
+    address: app.address,
+    admission: app.admissionDate || todayString()
+  };
+  students.push(newStudent);
+  saveStudents(students);
+
+  // 2. Initialize Fee Schedule according to course
+  const feeData = getFeesData();
+  const total = FEE_STRUCTURE[app.course] || 0;
+  feeData[newStudentId] = { total, paid: 0, history: [] };
+  saveFeesData(feeData);
+
+  // 3. Mark application approved
+  app.status = 'approved';
+  app.approvedAt = new Date().toISOString();
+  app.approvedBy = currentUser ? (currentUser.name || currentUser.email) : 'Faculty';
+  saveLocalStudentAdmissions(allAdmissions);
+
+  // 4. Update Firestore if connected
+  if (firebaseInitialized && db) {
+    try {
+      await db.collection('student_admissions').doc(id).set({
+        status: 'approved',
+        approvedAt: new Date().toISOString(),
+        approvedBy: currentUser ? (currentUser.name || currentUser.email) : 'Faculty'
+      }, { merge: true });
+    } catch(e) {
+      console.warn('Firestore admission sync notice:', e);
+    }
+  }
+
+  logActivity('student', app.name, `Admission approved into ${app.course} Sem ${app.semester} by ${currentUser?.name || 'Faculty'}`);
+  showToast(`🎉 ${app.name} has been enrolled into ${app.course}!`, 'success');
+  renderAdmissionsView();
+  updateAdmissionsBadge();
+  renderStudentsTable();
+  renderDashboard();
+}
+
+async function rejectStudentAdmission(id) {
+  if (!confirm('Are you sure you want to decline this admission application?')) return;
+  const allAdmissions = await fetchAllAdmissions();
+  const app = allAdmissions.find(a => a.id === id);
+  if (app) {
+    app.status = 'rejected';
+    app.rejectedAt = new Date().toISOString();
+    app.rejectedBy = currentUser ? (currentUser.name || currentUser.email) : 'Faculty';
+    saveLocalStudentAdmissions(allAdmissions);
+  }
+
+  if (firebaseInitialized && db) {
+    try {
+      await db.collection('student_admissions').doc(id).set({
+        status: 'rejected',
+        rejectedAt: new Date().toISOString(),
+        rejectedBy: currentUser ? (currentUser.name || currentUser.email) : 'Faculty'
+      }, { merge: true });
+    } catch(e) {}
+  }
+
+  showToast('Admission application declined.', 'info');
+  renderAdmissionsView();
+  updateAdmissionsBadge();
+}
+
+// ============================================================
 //  NAVIGATION
 // ============================================================
 function showView(viewName) {
-  const views = ['dashboard','students','attendance','fees','reports','approvals'];
+  closeMobileSidebar();
+  const views = ['dashboard','students','attendance','fees','reports','approvals','admissions'];
   views.forEach(v => {
     const el = document.getElementById('view-' + v);
     if (el) el.style.display = (v === viewName) ? '' : 'none';
@@ -2215,7 +2955,8 @@ function showView(viewName) {
     attendance:'Attendance', 
     fees:'Fee Management', 
     reports:'Reports & Analytics',
-    approvals:'Faculty Approvals'
+    approvals:'Faculty Approvals',
+    admissions:'Student Admissions'
   };
   document.getElementById('page-title').textContent = titles[viewName] || viewName;
 
@@ -2229,10 +2970,27 @@ function showView(viewName) {
   if (viewName === 'fees') renderFeesTable();
   if (viewName === 'reports') renderReports();
   if (viewName === 'approvals') renderApprovalsView();
+  if (viewName === 'admissions') renderAdmissionsView();
 }
 
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('collapsed');
+  const sb = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  if (window.innerWidth <= 768) {
+    const isOpen = sb.classList.toggle('mobile-open');
+    if (backdrop) backdrop.style.display = isOpen ? 'block' : 'none';
+  } else {
+    sb.classList.toggle('collapsed');
+  }
+}
+
+function closeMobileSidebar() {
+  if (window.innerWidth <= 768) {
+    const sb = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (sb) sb.classList.remove('mobile-open');
+    if (backdrop) backdrop.style.display = 'none';
+  }
 }
 
 function toggleUserMenu() {
@@ -2924,7 +3682,7 @@ function renderFeesTable() {
     histRow.id = 'hist-row-' + s.id;
     histRow.style.display = 'none';
     histRow.className = 'payment-history-row';
-    let histContent = '<td colspan="10" style="padding:0;"><div style="padding:12px 20px 16px;">';
+    let histContent = '<td colspan="10" style="padding:0;"><div style="padding:12px 20px 16px;overflow-x:auto;">';
     histContent += '<div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:8px;">Payment History</div>';
     if (!f.history || f.history.length === 0) {
       histContent += '<p style="font-size:13px;color:#94A3B8;">No payment records found.</p>';
