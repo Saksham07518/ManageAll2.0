@@ -435,9 +435,24 @@
           <span class="material-symbols-outlined">login</span> Sign In
         </button>
 
-        <div style="margin-top:16px;padding:10px 12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:6px;font-size:12px;color:#475569;display:flex;justify-content:space-between;align-items:center;">
-          <span>Default Demo Admin: <code style="color:#2563EB;font-family:'JetBrains Mono',monospace;">admin@manageall.edu / admin123</code></span>
-          <button onclick="fillDemoAdmin()" class="btn btn-ghost" style="padding:2px 6px;font-size:11px;color:#2563EB;">Fill</button>
+        <div style="margin-top:16px;padding:12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;font-size:12px;color:#475569;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span>Default Demo Admin: <code style="color:#2563EB;font-family:'JetBrains Mono',monospace;">admin@manageall.edu / admin123</code></span>
+            <button onclick="fillDemoAdmin()" class="btn btn-ghost" style="padding:2px 8px;font-size:11px;color:#2563EB;border:1px solid #BFDBFE;background:#EFF6FF;">Fill</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;border-top:1px dashed #CBD5E1;padding-top:8px;flex-wrap:wrap;">
+            <span style="font-weight:600;color:#0F172A;font-size:11.5px;">👨‍🏫 Course Mentor Login:</span>
+            <select id="quick-faculty-select" class="form-input" style="flex:1;min-width:160px;padding:4px 8px;font-size:11.5px;height:auto;" onchange="fillDemoFaculty(this.value)">
+              <option value="">Choose Course Faculty...</option>
+              <option value="BCA">BCA — Prof. Saksham Mishra</option>
+              <option value="MCA">MCA — Dr. Neha Sharma</option>
+              <option value="BE">BE — Dr. Rajesh Verma</option>
+              <option value="BBA">BBA — Prof. Priya Nair</option>
+              <option value="MBA">MBA — Dr. Vikram Malhotra</option>
+              <option value="BSc">BSc — Dr. Ananya Sen</option>
+              <option value="B.Com">B.Com — Prof. Suresh Mehta</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -568,6 +583,17 @@
               <span id="st-allotted-dept-title">Auto-Allotted Faculty Mentor</span>
             </div>
             <div id="st-allotted-faculty-desc" style="color:#2563EB;">Selecting course...</div>
+          </div>
+
+          <!-- Course Faculty Mentors Directory -->
+          <div style="margin-top:14px;border-top:1px solid #E2E8F0;padding-top:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:4px;">
+              <span style="font-size:11.5px;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:0.04em;display:flex;align-items:center;gap:5px;">
+                <span class="material-symbols-outlined" style="font-size:15px;color:#2563EB;">badge</span> Designated Course Faculty Mentors
+              </span>
+              <span style="font-size:11px;color:#64748B;">Tap mentor to pick course</span>
+            </div>
+            <div id="course-mentors-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;max-height:190px;overflow-y:auto;padding-right:2px;margin-bottom:12px;"></div>
           </div>
 
           <button id="btn-st-reg-submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;font-size:14px;" onclick="handleStudentAdmissionSubmit()">
@@ -756,6 +782,9 @@
           </button>
           <button id="dash-record-payment-btn" class="btn btn-outline" onclick="openPaymentModal()">
             <span class="material-symbols-outlined">payment</span> Record Payment
+          </button>
+          <button id="dash-impose-fine-btn" class="btn btn-outline" style="border-color:#F59E0B;color:#D97706;background:#FFFBEB;" onclick="openFineModal()">
+            <span class="material-symbols-outlined">gavel</span> Impose Fine
           </button>
         </div>
 
@@ -980,6 +1009,9 @@
             <span id="fee-faculty-notice" class="badge badge-amber" style="display:none;padding:6px 12px;font-size:12px;">
               <span class="material-symbols-outlined" style="font-size:14px;margin-right:4px;">lock</span> View-Only (Admin required to record payments)
             </span>
+            <button id="fee-add-fine-btn" class="btn btn-outline" style="border-color:#F59E0B;color:#D97706;background:#FFFBEB;" onclick="openFineModal()">
+              <span class="material-symbols-outlined" style="font-size:18px;">gavel</span> Impose Fine
+            </button>
             <button id="fee-record-payment-btn" class="btn btn-primary" onclick="openPaymentModal()">
               <span class="material-symbols-outlined">add_card</span> Record Payment
             </button>
@@ -1038,7 +1070,9 @@
                   <th>Roll No</th>
                   <th>Student Name</th>
                   <th>Course</th>
-                  <th>Total Fee</th>
+                  <th>Base Fee</th>
+                  <th>Fine</th>
+                  <th>Total Due</th>
                   <th>Paid</th>
                   <th>Pending</th>
                   <th>Last Payment</th>
@@ -1447,6 +1481,71 @@
   </div>
 </div>
 
+<!-- Impose Fine / Penalty Modal (Admin Only) -->
+<div class="modal-overlay" id="modal-impose-fine">
+  <div class="modal-box" style="max-width:500px;">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="material-symbols-outlined" style="color:#D97706;font-size:22px;">gavel</span>
+        <h3 style="font-family:'Hanken Grotesk',sans-serif;font-size:17px;font-weight:700;color:#0F172A;">Impose Student Fine / Penalty</h3>
+      </div>
+      <button onclick="closeModal('modal-impose-fine')" class="btn-ghost btn" style="padding:4px;">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Select Student *</label>
+        <select id="fine-student" class="form-input" onchange="onFineStudentChange()">
+          <option value="">Choose a student...</option>
+        </select>
+      </div>
+
+      <div id="fine-student-summary" style="display:none;padding:10px 14px;background:#FEF3C7;border-radius:6px;border:1px solid #FDE68A;margin-bottom:14px;font-size:12.5px;color:#92400E;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Current Fee Due: <strong id="fine-cur-due">₹0</strong></span>
+          <span>Existing Fines: <strong id="fine-cur-fines">₹0</strong></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Fine Reason / Category *</label>
+        <select id="fine-category" class="form-input" onchange="onFineCategoryChange()">
+          <option value="Late Tuition Fee Penalty">Late Tuition Fee Penalty (Standard ₹500)</option>
+          <option value="Attendance Shortage Fine">Attendance Shortage Fine (&lt;75% Attendance - ₹1,000)</option>
+          <option value="Library Book Overdue">Library Book Overdue (₹200)</option>
+          <option value="Laboratory Damage / Loss">Laboratory Damage / Loss Assessment</option>
+          <option value="Exam Registration Late Fee">Exam Registration Late Fee (₹400)</option>
+          <option value="Disciplinary Penalty">Disciplinary Penalty</option>
+          <option value="Other">Custom Fine / Other</option>
+        </select>
+      </div>
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Fine Amount (₹) *</label>
+          <input type="number" id="fine-amount" class="form-input" placeholder="500" value="500" min="1" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date Imposed *</label>
+          <input type="date" id="fine-date" class="form-input" />
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">Remarks / Justification</label>
+        <input type="text" id="fine-remarks" class="form-input" placeholder="e.g. Overdue fee payment past 30 days deadline" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-impose-fine')">Cancel</button>
+      <button class="btn btn-primary" style="background:#D97706;" onclick="recordFine()">
+        <span class="material-symbols-outlined">gavel</span> Impose Fine
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Delete Confirm Modal -->
 <div class="modal-overlay" id="modal-confirm-delete">
   <div class="modal-box" style="max-width:420px;">
@@ -1717,8 +1816,18 @@ function initSampleData() {
   for (const p of payments) {
     const st = students.find(x => x.id === p.s);
     if (!st) continue;
-    const total = FEE_STRUCTURE[st.course] || 0;
-    feeData[p.s] = { total, paid: p.paid, history: p.hist };
+    const base = FEE_STRUCTURE[st.course] || 0;
+    const fines = p.s === 's3' ? [{
+      id: 'fine_sample_1',
+      category: 'Attendance Shortage Fine',
+      amount: 1000,
+      date: '2024-07-28',
+      remarks: 'Attendance below 75% threshold in BCA Sem 3',
+      imposedBy: 'System Administrator',
+      createdAt: '2024-07-28T10:00:00.000Z'
+    }] : [];
+    const totalFine = fines.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    feeData[p.s] = { base, total: base + totalFine, paid: p.paid, history: p.hist, fines };
   }
   saveFeesData(feeData);
 
@@ -1761,6 +1870,14 @@ function fillDemoAdmin() {
   document.getElementById('login-email').value = 'admin@manageall.edu';
   document.getElementById('login-password').value = 'admin123';
   showToast('Filled demo admin credentials', 'info');
+}
+
+function fillDemoFaculty(course) {
+  if (!course) return;
+  const faculty = getAssignedFacultyForCourse(course);
+  document.getElementById('login-email').value = faculty?.email || 'faculty@manageall.edu';
+  document.getElementById('login-password').value = 'faculty123';
+  showToast(`Selected ${faculty?.name || 'Faculty'} (${course} Mentor)`, 'info');
 }
 
 function handleForgotPassword() {
@@ -2161,8 +2278,14 @@ function loginSuccess(user) {
   const dashPayBtn = document.getElementById('dash-record-payment-btn');
   if (dashPayBtn) dashPayBtn.style.display = isAdmin ? 'inline-flex' : 'none';
 
+  const dashFineBtn = document.getElementById('dash-impose-fine-btn');
+  if (dashFineBtn) dashFineBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+
   const feePayBtn = document.getElementById('fee-record-payment-btn');
   if (feePayBtn) feePayBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+
+  const feeFineBtn = document.getElementById('fee-add-fine-btn');
+  if (feeFineBtn) feeFineBtn.style.display = isAdmin ? 'inline-flex' : 'none';
 
   const feeFacultyNotice = document.getElementById('fee-faculty-notice');
   if (feeFacultyNotice) feeFacultyNotice.style.display = !isAdmin ? 'inline-flex' : 'none';
@@ -3106,8 +3229,8 @@ function renderDashboard() {
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94A3B8;padding:20px;">No recent activity</td></tr>';
     return;
   }
-  const typeIcon = { attendance:'fact_check', payment:'payments', student:'person_add' };
-  const typeBadge = { attendance:'badge-cobalt', payment:'badge-emerald', student:'badge-navy' };
+  const typeIcon = { attendance:'fact_check', payment:'payments', student:'person_add', fine:'gavel' };
+  const typeBadge = { attendance:'badge-cobalt', payment:'badge-emerald', student:'badge-navy', fine:'badge-amber' };
   acts.slice(0,10).forEach(a => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -3355,6 +3478,11 @@ function renderStudentsTable() {
       <td><span class="badge ${feeBadge}">${feeStatus}</span></td>
       <td>
         <div style="display:flex;gap:6px;">
+          ${(currentUser && (currentUser.role === 'admin' || currentUser.email === HARDCODED_ADMIN.email)) ? `
+            <button class="btn btn-ghost" style="padding:4px 8px;" onclick="openFineModalForStudent('${s.id}')" title="Impose Fine">
+              <span class="material-symbols-outlined" style="font-size:17px;color:#D97706;">gavel</span>
+            </button>
+          ` : ''}
           <button class="btn btn-ghost" style="padding:4px 8px;" onclick="openStudentDrawer('${s.id}')" title="View">
             <span class="material-symbols-outlined" style="font-size:17px;color:#2563EB;">visibility</span>
           </button>
@@ -3502,7 +3630,13 @@ function openStudentDrawer(id) {
   if (!s) return;
   const attData = getAttendanceData();
   const feeData = getFeesData();
-  const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[] };
+  const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[], fines:[] };
+  const fines = f.fines || [];
+  const fineTotal = fines.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const baseFee = f.base || (FEE_STRUCTURE[s.course] || (f.total - fineTotal));
+  f.base = baseFee;
+  f.total = baseFee + fineTotal;
+  const pending = f.total - f.paid;
   const pct = calculateAttendance(s.id);
   const attBadge = pct >= 75 ? 'badge-emerald' : pct >= 50 ? 'badge-amber' : 'badge-rose';
   let feeStatus = 'Pending', feeBadge = 'badge-rose';
@@ -3557,19 +3691,44 @@ function openStudentDrawer(id) {
       <div><span style="color:#64748B;">Admission:</span> ${formatDate(s.admission)}</div>
     </div>
 
-    <!-- Fee Summary -->
-    <div style="padding:12px 16px;background:#F0FDF4;border-radius:8px;border:1px solid #A7F3D0;margin-bottom:20px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
-        <span style="color:#065F46;font-weight:600;">Fee Summary</span>
-        <span class="badge ${feeBadge}">${feeStatus}</span>
+    <!-- Fee & Fine Summary -->
+    <div style="padding:14px 16px;background:#F0FDF4;border-radius:8px;border:1px solid #A7F3D0;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;flex-wrap:wrap;gap:8px;">
+        <span style="color:#065F46;font-weight:700;display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined" style="font-size:18px;">payments</span> Fee &amp; Fine Summary
+        </span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span class="badge ${feeBadge}">${feeStatus}</span>
+          ${isCurrentUserAdmin() ? `
+            <button class="btn btn-outline" style="border-color:#F59E0B;color:#D97706;background:#FFFBEB;font-size:11.5px;padding:3px 9px;" onclick="openFineModalForStudent('${s.id}')">
+              <span class="material-symbols-outlined" style="font-size:14px;margin-right:2px;">gavel</span> Impose Fine
+            </button>
+            <button class="btn btn-primary" style="font-size:11.5px;padding:3px 9px;" onclick="openPaymentModalForStudent('${s.id}')">
+              <span class="material-symbols-outlined" style="font-size:14px;margin-right:2px;">add_card</span> Record Payment
+            </button>
+          ` : ''}
+        </div>
       </div>
-      <div class="progress-bar" style="margin-bottom:8px;">
-        <div class="progress-fill" style="background:#10B981;width:${f.total?Math.round(f.paid/f.total*100):0}%;"></div>
+      <div class="progress-bar" style="margin-bottom:10px;">
+        <div class="progress-fill" style="background:#10B981;width:${f.total?Math.min(100, Math.round(f.paid/f.total*100)):0}%;"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:#475569;">
-        <span>Paid: <strong style="color:#10B981;">${formatCurrency(f.paid)}</strong></span>
-        <span>Pending: <strong style="color:#EF4444;">${formatCurrency(f.total-f.paid)}</strong></span>
-        <span>Total: <strong>${formatCurrency(f.total)}</strong></span>
+      <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;font-size:12px;color:#475569;background:#fff;padding:10px 8px;border-radius:6px;border:1px solid #E2E8F0;text-align:center;">
+        <div>
+          <div style="color:#64748B;font-size:11px;">Base Course Fee</div>
+          <strong style="color:#0F172A;font-family:'JetBrains Mono',monospace;">${formatCurrency(baseFee)}</strong>
+        </div>
+        <div>
+          <div style="color:#64748B;font-size:11px;">Imposed Fines</div>
+          <strong style="color:${fineTotal > 0 ? '#D97706' : '#64748B'};font-family:'JetBrains Mono',monospace;">${fineTotal > 0 ? '+' : ''}${formatCurrency(fineTotal)}</strong>
+        </div>
+        <div>
+          <div style="color:#64748B;font-size:11px;">Total Paid</div>
+          <strong style="color:#10B981;font-family:'JetBrains Mono',monospace;">${formatCurrency(f.paid)}</strong>
+        </div>
+        <div>
+          <div style="color:#64748B;font-size:11px;">Pending Due</div>
+          <strong style="color:${pending > 0 ? '#EF4444' : '#10B981'};font-family:'JetBrains Mono',monospace;">${formatCurrency(pending)}</strong>
+        </div>
       </div>
     </div>
 
@@ -3591,6 +3750,42 @@ function openStudentDrawer(id) {
         <table class="data-table">
           <thead><tr><th>Date</th><th>Amount</th><th>Mode</th><th>Txn ID</th><th>Remarks</th></tr></thead>
           <tbody>${feeRows || '<tr><td colspan="5" style="text-align:center;color:#94A3B8;">No payments</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Fines & Penalties History -->
+    <div style="margin-top:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <h4 style="font-family:'Hanken Grotesk',sans-serif;font-size:14px;font-weight:700;color:#0F172A;display:flex;align-items:center;gap:6px;">
+          <span class="material-symbols-outlined" style="font-size:17px;color:#D97706;">gavel</span> Imposed Fines &amp; Penalties (${fines.length})
+        </h4>
+        ${isCurrentUserAdmin() ? `
+          <button class="btn btn-ghost" style="padding:2px 8px;font-size:11.5px;color:#D97706;border:1px solid #FDE68A;background:#FFFBEB;" onclick="openFineModalForStudent('${s.id}')">
+            <span class="material-symbols-outlined" style="font-size:14px;margin-right:2px;">add</span> Impose Fine
+          </button>
+        ` : ''}
+      </div>
+      <div style="border:1px solid #F1F5F9;border-radius:6px;overflow:hidden;">
+        <table class="data-table">
+          <thead><tr><th>Date</th><th>Category / Reason</th><th>Amount</th><th>Remarks</th>${isCurrentUserAdmin()?'<th>Action</th>':''}</tr></thead>
+          <tbody>
+            ${fines.length ? [...fines].reverse().map(fn => `
+              <tr>
+                <td class="mono" style="font-size:12px;">${fn.date}</td>
+                <td style="font-weight:500;color:#92400E;font-size:12px;">${fn.category}</td>
+                <td class="mono" style="color:#D97706;font-weight:600;font-size:12px;">+${formatCurrency(fn.amount)}</td>
+                <td style="font-size:12px;color:#64748B;">${fn.remarks || '—'}</td>
+                ${isCurrentUserAdmin() ? `
+                  <td>
+                    <button class="btn btn-ghost" style="padding:2px 6px;color:#EF4444;font-size:11px;" onclick="removeFine('${s.id}','${fn.id}')" title="Waive/Remove Fine">
+                      <span class="material-symbols-outlined" style="font-size:14px;color:#EF4444;">delete</span> Waive
+                    </button>
+                  </td>
+                ` : ''}
+              </tr>
+            `).join('') : '<tr><td colspan="' + (isCurrentUserAdmin()?5:4) + '" style="text-align:center;color:#94A3B8;padding:12px;font-size:12px;">No fines imposed on this student.</td></tr>'}
+          </tbody>
         </table>
       </div>
     </div>
@@ -3622,26 +3817,31 @@ function renderFeesTable() {
   tbody.innerHTML = '';
 
   let filtered = students.map(s => {
-    const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[] };
+    const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[], fines:[] };
+    const fines = f.fines || [];
+    const fineTotal = fines.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const baseFee = f.base || (FEE_STRUCTURE[s.course] || (f.total - fineTotal));
+    f.base = baseFee;
+    f.total = baseFee + fineTotal;
     const pending = f.total - f.paid;
     let status = 'Pending';
     if (f.paid >= f.total) status = 'Paid';
     else if (f.paid > 0) status = 'Partial';
-    return { s, f, pending, status };
+    return { s, f, baseFee, fineTotal, fines, pending, status };
   });
 
   if (statusFilter) filtered = filtered.filter(x => x.status === statusFilter);
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94A3B8;padding:30px;">No records found</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#94A3B8;padding:30px;">No records found</td></tr>';
     return;
   }
 
-  filtered.forEach(({ s, f, pending, status }) => {
+  filtered.forEach(({ s, f, baseFee, fineTotal, fines, pending, status }) => {
     const badge = status === 'Paid' ? 'badge-emerald' : status === 'Partial' ? 'badge-amber' : 'badge-rose';
     const lastPayment = f.history?.length ? f.history[f.history.length-1].date : null;
 
-    // Main row
+    // Main row with 12 matching columns
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>
@@ -3657,7 +3857,9 @@ function renderFeesTable() {
         </div>
       </td>
       <td><span class="badge badge-cobalt">${s.course}</span></td>
-      <td class="mono" style="font-size:13px;">${formatCurrency(f.total)}</td>
+      <td class="mono" style="font-size:13px;">${formatCurrency(baseFee)}</td>
+      <td class="mono" style="font-size:13px;">${fineTotal > 0 ? `<span class="badge badge-amber" style="font-size:11px;font-weight:600;">+${formatCurrency(fineTotal)}</span>` : '<span style="color:#94A3B8;">—</span>'}</td>
+      <td class="mono" style="font-size:13px;font-weight:600;">${formatCurrency(f.total)}</td>
       <td class="mono" style="font-size:13px;color:#10B981;font-weight:600;">${formatCurrency(f.paid)}</td>
       <td class="mono" style="font-size:13px;color:${pending>0?'#EF4444':'#64748B'};font-weight:${pending>0?'600':'400'};">${formatCurrency(pending)}</td>
       <td style="font-size:12px;color:#64748B;">${formatDate(lastPayment)}</td>
@@ -3665,6 +3867,9 @@ function renderFeesTable() {
       <td>
         <div style="display:flex;gap:4px;">
           ${(currentUser && (currentUser.role === 'admin' || currentUser.email === HARDCODED_ADMIN.email)) ? `
+            <button class="btn btn-ghost" style="padding:4px;" onclick="openFineModalForStudent('${s.id}')" title="Impose Fine">
+              <span class="material-symbols-outlined" style="font-size:16px;color:#D97706;">gavel</span>
+            </button>
             <button class="btn btn-ghost" style="padding:4px;" onclick="openPaymentModalForStudent('${s.id}')" title="Record payment">
               <span class="material-symbols-outlined" style="font-size:16px;color:#10B981;">add_card</span>
             </button>
@@ -3677,17 +3882,19 @@ function renderFeesTable() {
     `;
     tbody.appendChild(tr);
 
-    // History expandable row
+    // History expandable row with 12 colspan
     const histRow = document.createElement('tr');
     histRow.id = 'hist-row-' + s.id;
     histRow.style.display = 'none';
     histRow.className = 'payment-history-row';
-    let histContent = '<td colspan="10" style="padding:0;"><div style="padding:12px 20px 16px;overflow-x:auto;">';
-    histContent += '<div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:8px;">Payment History</div>';
+    let histContent = '<td colspan="12" style="padding:0;"><div style="padding:14px 20px 18px;overflow-x:auto;">';
+
+    // 1. Payment History
+    histContent += '<div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:8px;display:flex;align-items:center;gap:6px;"><span class="material-symbols-outlined" style="font-size:16px;color:#10B981;">payments</span> Payment History</div>';
     if (!f.history || f.history.length === 0) {
-      histContent += '<p style="font-size:13px;color:#94A3B8;">No payment records found.</p>';
+      histContent += '<p style="font-size:12.5px;color:#94A3B8;margin-bottom:14px;">No payment records found.</p>';
     } else {
-      histContent += '<table class="payment-table"><thead style="background:#F8FAFC;"><tr><th>Date</th><th>Amount</th><th>Mode</th><th>Transaction ID</th><th>Remarks</th></tr></thead><tbody>';
+      histContent += '<table class="payment-table" style="margin-bottom:16px;"><thead style="background:#F8FAFC;"><tr><th>Date</th><th>Amount</th><th>Mode</th><th>Transaction ID</th><th>Remarks</th></tr></thead><tbody>';
       for (const p of [...(f.history||[])].reverse()) {
         histContent += `<tr>
           <td style="font-family:'JetBrains Mono',monospace;">${p.date}</td>
@@ -3699,6 +3906,40 @@ function renderFeesTable() {
       }
       histContent += '</tbody></table>';
     }
+
+    // 2. Imposed Fines & Penalties
+    histContent += `<div style="font-size:13px;font-weight:600;color:#92400E;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="display:flex;align-items:center;gap:6px;"><span class="material-symbols-outlined" style="font-size:16px;color:#D97706;">gavel</span> Imposed Fines &amp; Penalties (${fines.length})</span>
+      ${(currentUser && (currentUser.role === 'admin' || currentUser.email === HARDCODED_ADMIN.email)) ? `
+        <button class="btn btn-ghost" style="padding:2px 8px;font-size:11.5px;color:#D97706;border:1px solid #FDE68A;background:#FFFBEB;" onclick="openFineModalForStudent('${s.id}')">
+          <span class="material-symbols-outlined" style="font-size:14px;margin-right:2px;">add</span> Impose Fine
+        </button>
+      ` : ''}
+    </div>`;
+
+    if (!fines.length) {
+      histContent += '<p style="font-size:12.5px;color:#94A3B8;margin-bottom:4px;">No fines or penalties recorded for this student.</p>';
+    } else {
+      histContent += '<table class="payment-table"><thead style="background:#FEF3C7;"><tr><th>Date</th><th>Category / Reason</th><th>Amount</th><th>Remarks</th><th>Imposed By</th><th>Action</th></tr></thead><tbody>';
+      for (const fn of [...fines].reverse()) {
+        histContent += `<tr>
+          <td style="font-family:'JetBrains Mono',monospace;">${fn.date}</td>
+          <td style="font-weight:500;color:#92400E;">${fn.category}</td>
+          <td style="font-family:'JetBrains Mono',monospace;color:#D97706;font-weight:600;">+${formatCurrency(fn.amount)}</td>
+          <td style="color:#64748B;font-size:12px;">${fn.remarks || '—'}</td>
+          <td style="color:#64748B;font-size:12px;">${fn.imposedBy || 'Admin'}</td>
+          <td>
+            ${(currentUser && (currentUser.role === 'admin' || currentUser.email === HARDCODED_ADMIN.email)) ? `
+              <button class="btn btn-ghost" style="padding:2px 6px;color:#EF4444;font-size:11px;" onclick="removeFine('${s.id}','${fn.id}')" title="Waive Fine">
+                <span class="material-symbols-outlined" style="font-size:14px;">delete</span> Waive
+              </button>
+            ` : '—'}
+          </td>
+        </tr>`;
+      }
+      histContent += '</tbody></table>';
+    }
+
     histContent += '</div></td>';
     histRow.innerHTML = histContent;
     tbody.appendChild(histRow);
@@ -3815,6 +4056,189 @@ function recordPayment() {
 }
 
 // ============================================================
+//  FINE & PENALTY MANAGEMENT (ADMIN ONLY)
+// ============================================================
+function openFineModal() {
+  if (!isCurrentUserAdmin()) {
+    showToast('Access Denied: Only administrators can impose fines.', 'error');
+    return;
+  }
+  const students = getStudents();
+  const sel = document.getElementById('fine-student');
+  sel.innerHTML = '<option value="">Choose a student...</option>';
+  for (const s of students) {
+    sel.innerHTML += `<option value="${s.id}">${s.name} (${s.roll} - ${s.course})</option>`;
+  }
+  document.getElementById('fine-category').value = 'Late Tuition Fee Penalty';
+  document.getElementById('fine-amount').value = 500;
+  document.getElementById('fine-date').value = todayString();
+  document.getElementById('fine-remarks').value = '';
+  document.getElementById('fine-student-summary').style.display = 'none';
+  openModal('modal-impose-fine');
+}
+
+function openFineModalForStudent(id) {
+  if (!isCurrentUserAdmin()) {
+    showToast('Access Denied: Only administrators can impose fines.', 'error');
+    return;
+  }
+  openFineModal();
+  setTimeout(() => {
+    const sel = document.getElementById('fine-student');
+    if (sel) {
+      sel.value = id;
+      onFineStudentChange();
+    }
+  }, 50);
+}
+
+function onFineStudentChange() {
+  const id = document.getElementById('fine-student').value;
+  const summaryBox = document.getElementById('fine-student-summary');
+  if (!id) {
+    summaryBox.style.display = 'none';
+    return;
+  }
+  const students = getStudents();
+  const s = students.find(x => x.id === id);
+  const feeData = getFeesData();
+  const f = feeData[id] || { total: FEE_STRUCTURE[s?.course] || 0, paid: 0, fines: [] };
+  const existingFines = (f.fines || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const curDue = Math.max(0, (f.total || 0) - (f.paid || 0));
+
+  document.getElementById('fine-cur-due').textContent = formatCurrency(curDue);
+  document.getElementById('fine-cur-fines').textContent = formatCurrency(existingFines);
+  summaryBox.style.display = 'block';
+}
+
+function onFineCategoryChange() {
+  const cat = document.getElementById('fine-category').value;
+  const amountInput = document.getElementById('fine-amount');
+  const remarksInput = document.getElementById('fine-remarks');
+  switch (cat) {
+    case 'Late Tuition Fee Penalty':
+      amountInput.value = 500;
+      if (!remarksInput.value) remarksInput.value = 'Late fee penalty for delayed semester tuition';
+      break;
+    case 'Attendance Shortage Fine':
+      amountInput.value = 1000;
+      if (!remarksInput.value) remarksInput.value = 'Attendance shortage penalty (<75% attendance threshold)';
+      break;
+    case 'Library Book Overdue':
+      amountInput.value = 200;
+      if (!remarksInput.value) remarksInput.value = 'Library book returned overdue beyond borrowing limit';
+      break;
+    case 'Exam Registration Late Fee':
+      amountInput.value = 400;
+      if (!remarksInput.value) remarksInput.value = 'Penalty for late submission of examination registration';
+      break;
+    case 'Laboratory Damage / Loss':
+      amountInput.value = 500;
+      if (!remarksInput.value) remarksInput.value = 'Assessment for laboratory equipment damage or loss';
+      break;
+    case 'Disciplinary Penalty':
+      amountInput.value = 1000;
+      if (!remarksInput.value) remarksInput.value = 'Administrative disciplinary fine';
+      break;
+    case 'Other':
+      amountInput.value = '';
+      break;
+  }
+}
+
+function recordFine() {
+  if (!isCurrentUserAdmin()) {
+    showToast('Access Denied: Only administrators can impose fines.', 'error');
+    return;
+  }
+  const id = document.getElementById('fine-student').value;
+  const category = document.getElementById('fine-category').value;
+  const amount = parseFloat(document.getElementById('fine-amount').value);
+  const date = document.getElementById('fine-date').value;
+  const remarks = document.getElementById('fine-remarks').value.trim();
+
+  if (!id) { showToast('Please select a student', 'error'); return; }
+  if (!amount || amount <= 0) { showToast('Please enter a valid fine amount (greater than 0)', 'error'); return; }
+  if (!date) { showToast('Please select the date imposed', 'error'); return; }
+
+  const feeData = getFeesData();
+  const students = getStudents();
+  const s = students.find(x => x.id === id);
+
+  if (!feeData[id]) {
+    feeData[id] = { total: FEE_STRUCTURE[s?.course] || 0, paid: 0, history: [], fines: [] };
+  }
+  const f = feeData[id];
+  f.fines = f.fines || [];
+
+  const base = f.base || (FEE_STRUCTURE[s?.course] || (f.total - (f.fines.reduce((sum, item) => sum + (Number(item.amount) || 0), 0))));
+  f.base = base;
+
+  const fineRecord = {
+    id: 'fine_' + Date.now(),
+    category,
+    amount,
+    date,
+    remarks: remarks || category,
+    imposedBy: currentUser ? (currentUser.name || currentUser.email) : 'System Administrator',
+    createdAt: new Date().toISOString()
+  };
+
+  f.fines.push(fineRecord);
+  const totalFines = f.fines.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  f.total = f.base + totalFines;
+
+  saveFeesData(feeData);
+  logActivity('fine', s?.name || 'Unknown', `Imposed fine of ${formatCurrency(amount)} (${category})`);
+  showToast(`Fine of ${formatCurrency(amount)} imposed on ${s?.name || 'student'}`, 'success');
+  closeModal('modal-impose-fine');
+
+  renderFeesTable();
+  renderStudentsTable();
+  renderDashboard();
+  renderReports();
+
+  const drawer = document.getElementById('drawer-student-detail');
+  if (drawer && drawer.classList.contains('open')) {
+    openStudentDrawer(id);
+  }
+}
+
+function removeFine(studentId, fineId) {
+  if (!isCurrentUserAdmin()) {
+    showToast('Access Denied: Only administrators can modify fines.', 'error');
+    return;
+  }
+  if (!confirm('Are you sure you want to waive/remove this fine?')) return;
+  const feeData = getFeesData();
+  const students = getStudents();
+  const s = students.find(x => x.id === studentId);
+  const f = feeData[studentId];
+  if (!f || !f.fines) return;
+
+  const target = f.fines.find(x => x.id === fineId);
+  f.fines = f.fines.filter(x => x.id !== fineId);
+  const totalFines = f.fines.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const base = f.base || (FEE_STRUCTURE[s?.course] || Math.max(0, f.total - (target?.amount || 0)));
+  f.base = base;
+  f.total = f.base + totalFines;
+
+  saveFeesData(feeData);
+  logActivity('fine', s?.name || 'Unknown', `Waived fine of ${formatCurrency(target?.amount || 0)}`);
+  showToast('Fine waived successfully', 'info');
+
+  renderFeesTable();
+  renderStudentsTable();
+  renderDashboard();
+  renderReports();
+
+  const drawer = document.getElementById('drawer-student-detail');
+  if (drawer && drawer.classList.contains('open')) {
+    openStudentDrawer(studentId);
+  }
+}
+
+// ============================================================
 //  REPORTS
 // ============================================================
 function renderReports() {
@@ -3868,7 +4292,12 @@ function renderFeeReport() {
   tbody.innerHTML = '';
 
   for (const s of students) {
-    const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[] };
+    const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[], fines:[] };
+    const fines = f.fines || [];
+    const fineTotal = fines.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const baseFee = f.base || (FEE_STRUCTURE[s.course] || (f.total - fineTotal));
+    f.base = baseFee;
+    f.total = baseFee + fineTotal;
     const pending = f.total - f.paid;
     let status = 'Pending', badge = 'badge-rose';
     if (f.paid >= f.total) { status = 'Paid'; badge = 'badge-emerald'; }
@@ -3879,7 +4308,7 @@ function renderFeeReport() {
       <td class="mono" style="font-size:12px;">${s.roll}</td>
       <td style="font-weight:500;">${s.name}</td>
       <td><span class="badge badge-cobalt">${s.course}</span></td>
-      <td class="mono">${formatCurrency(f.total)}</td>
+      <td class="mono">${formatCurrency(f.total)} ${fineTotal > 0 ? `<span style="font-size:11px;color:#D97706;font-weight:600;">(+${formatCurrency(fineTotal)} fine)</span>` : ''}</td>
       <td class="mono" style="color:#10B981;font-weight:600;">${formatCurrency(f.paid)}</td>
       <td class="mono" style="color:${pending>0?'#EF4444':'#64748B'};font-weight:${pending>0?'600':'400'};">${formatCurrency(pending)}</td>
       <td style="font-size:12px;color:#64748B;">${formatDate(lastP)}</td>
@@ -3901,15 +4330,22 @@ function renderDefaulterReport() {
   let count = 0;
   for (const s of students) {
     const pct = calculateAttendance(s.id);
-    const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[] };
+    const f = feeData[s.id] || { total: FEE_STRUCTURE[s.course]||0, paid:0, history:[], fines:[] };
+    const fines = f.fines || [];
+    const fineTotal = fines.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const baseFee = f.base || (FEE_STRUCTURE[s.course] || (f.total - fineTotal));
+    f.base = baseFee;
+    f.total = baseFee + fineTotal;
     const pending = f.total - f.paid;
     const lowAtt = pct < 75;
     const highFee = pending > 10000;
-    if (!lowAtt && !highFee) continue;
+    const hasUnpaidFines = fineTotal > 0 && pending > 0;
+    if (!lowAtt && !highFee && !hasUnpaidFines) continue;
     count++;
     const reasons = [];
     if (lowAtt) reasons.push(`Attendance ${pct}% < 75%`);
     if (highFee) reasons.push(`Fees >${formatCurrency(10000)} pending`);
+    if (hasUnpaidFines) reasons.push(`Unpaid fines (${formatCurrency(fineTotal)})`);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="mono" style="font-size:12px;">${s.roll}</td>
@@ -3960,13 +4396,18 @@ function exportAttendanceCSV() {
 function exportFeeCSV() {
   const students = getStudents();
   const feeData = getFeesData();
-  const rows = [['Roll No','Name','Course','Total Fee','Paid','Pending','Last Payment','Status']];
+  const rows = [['Roll No','Name','Course','Base Fee','Fines','Total Due','Paid','Pending','Last Payment','Status']];
   for (const s of students) {
-    const f = feeData[s.id] || { total:FEE_STRUCTURE[s.course]||0, paid:0, history:[] };
+    const f = feeData[s.id] || { total:FEE_STRUCTURE[s.course]||0, paid:0, history:[], fines:[] };
+    const fines = f.fines || [];
+    const fineTotal = fines.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const baseFee = f.base || (FEE_STRUCTURE[s.course] || (f.total - fineTotal));
+    f.base = baseFee;
+    f.total = baseFee + fineTotal;
     const pending = f.total - f.paid;
     let status = f.paid >= f.total ? 'Paid' : f.paid > 0 ? 'Partial' : 'Pending';
     const lastP = f.history?.length ? f.history[f.history.length-1].date : '';
-    rows.push([s.roll, s.name, s.course, f.total, f.paid, pending, lastP, status]);
+    rows.push([s.roll, s.name, s.course, baseFee, fineTotal, f.total, f.paid, pending, lastP, status]);
   }
   downloadCSV(rows, 'fee_collection_report.csv');
   showToast('Fee report exported', 'success');
