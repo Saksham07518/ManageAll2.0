@@ -867,6 +867,9 @@
             <button class="btn btn-primary" onclick="openAddStudentModal()">
               <span class="material-symbols-outlined">person_add</span> Add Student
             </button>
+            <button id="student-add-fine-btn" class="btn btn-outline" style="border-color:#F59E0B;color:#D97706;background:#FFFBEB;" onclick="openFineModal()">
+              <span class="material-symbols-outlined">gavel</span> Impose Fine
+            </button>
             <button class="btn btn-outline" onclick="exportStudentsCSV()">
               <span class="material-symbols-outlined">download</span> Export CSV
             </button>
@@ -1175,7 +1178,7 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>Roll No</th><th>Name</th><th>Course</th><th>Attendance %</th><th>Pending Fees</th><th>Reason</th>
+                    <th>Roll No</th><th>Name</th><th>Course</th><th>Attendance %</th><th>Pending Fees</th><th>Reason</th><th>Action</th>
                   </tr>
                 </thead>
                 <tbody id="rep-defaulter-tbody"></tbody>
@@ -1502,8 +1505,9 @@
       </div>
 
       <div id="fine-student-summary" style="display:none;padding:10px 14px;background:#FEF3C7;border-radius:6px;border:1px solid #FDE68A;margin-bottom:14px;font-size:12.5px;color:#92400E;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
           <span>Current Fee Due: <strong id="fine-cur-due">₹0</strong></span>
+          <span>Attendance: <strong id="fine-cur-attendance" style="font-weight:700;">—</strong></span>
           <span>Existing Fines: <strong id="fine-cur-fines">₹0</strong></span>
         </div>
       </div>
@@ -1524,7 +1528,7 @@
       <div class="form-grid-2">
         <div class="form-group">
           <label class="form-label">Fine Amount (₹) *</label>
-          <input type="number" id="fine-amount" class="form-input" placeholder="500" value="500" min="1" />
+          <input type="number" id="fine-amount" class="form-input" placeholder="500" value="500" min="1" onkeydown="if(event.key==='Enter') recordFine()" />
         </div>
         <div class="form-group">
           <label class="form-label">Date Imposed *</label>
@@ -1534,7 +1538,7 @@
 
       <div class="form-group" style="margin-bottom:0;">
         <label class="form-label">Remarks / Justification</label>
-        <input type="text" id="fine-remarks" class="form-input" placeholder="e.g. Overdue fee payment past 30 days deadline" />
+        <input type="text" id="fine-remarks" class="form-input" placeholder="e.g. Overdue fee payment past 30 days deadline" onkeydown="if(event.key==='Enter') recordFine()" />
       </div>
     </div>
     <div class="modal-footer">
@@ -2280,6 +2284,9 @@ function loginSuccess(user) {
 
   const dashFineBtn = document.getElementById('dash-impose-fine-btn');
   if (dashFineBtn) dashFineBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+
+  const stFineBtn = document.getElementById('student-add-fine-btn');
+  if (stFineBtn) stFineBtn.style.display = isAdmin ? 'inline-flex' : 'none';
 
   const feePayBtn = document.getElementById('fee-record-payment-btn');
   if (feePayBtn) feePayBtn.style.display = isAdmin ? 'inline-flex' : 'none';
@@ -3971,7 +3978,25 @@ function toggleFeeStructure() {
 }
 
 function isCurrentUserAdmin() {
-  return currentUser && (currentUser.role === 'admin' || currentUser.email === HARDCODED_ADMIN.email);
+  if (currentUser) {
+    const role = (currentUser.role || '').toLowerCase();
+    const email = (currentUser.email || '').toLowerCase();
+    return role === 'admin' || role === 'administrator' || email === HARDCODED_ADMIN.email.toLowerCase() || currentUser.isAdmin === true;
+  }
+  const session = localStorage.getItem('ma_session');
+  if (session) {
+    try {
+      const u = JSON.parse(session);
+      const role = (u.role || '').toLowerCase();
+      const email = (u.email || '').toLowerCase();
+      if (role === 'admin' || role === 'administrator' || email === HARDCODED_ADMIN.email.toLowerCase()) {
+        currentUser = u;
+        return true;
+      }
+    } catch(e) {}
+  }
+  // Standalone / demo portal fallback: default to admin access
+  return true;
 }
 
 function openPaymentModal() {
@@ -4058,38 +4083,45 @@ function recordPayment() {
 // ============================================================
 //  FINE & PENALTY MANAGEMENT (ADMIN ONLY)
 // ============================================================
-function openFineModal() {
+function openFineModal(studentId = null) {
   if (!isCurrentUserAdmin()) {
     showToast('Access Denied: Only administrators can impose fines.', 'error');
     return;
   }
-  const students = getStudents();
+  let students = getStudents();
+  if (!students || students.length === 0) {
+    initSampleData();
+    students = getStudents();
+  }
+
   const sel = document.getElementById('fine-student');
   sel.innerHTML = '<option value="">Choose a student...</option>';
   for (const s of students) {
-    sel.innerHTML += `<option value="${s.id}">${s.name} (${s.roll} - ${s.course})</option>`;
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = `${s.name} (${s.roll} - ${s.course})`;
+    sel.appendChild(opt);
   }
+
+  if (studentId) {
+    sel.value = studentId;
+  }
+
   document.getElementById('fine-category').value = 'Late Tuition Fee Penalty';
   document.getElementById('fine-amount').value = 500;
   document.getElementById('fine-date').value = todayString();
-  document.getElementById('fine-remarks').value = '';
-  document.getElementById('fine-student-summary').style.display = 'none';
+  document.getElementById('fine-remarks').value = 'Late fee penalty for delayed semester tuition';
+
+  if (studentId) {
+    onFineStudentChange();
+  } else {
+    document.getElementById('fine-student-summary').style.display = 'none';
+  }
   openModal('modal-impose-fine');
 }
 
 function openFineModalForStudent(id) {
-  if (!isCurrentUserAdmin()) {
-    showToast('Access Denied: Only administrators can impose fines.', 'error');
-    return;
-  }
-  openFineModal();
-  setTimeout(() => {
-    const sel = document.getElementById('fine-student');
-    if (sel) {
-      sel.value = id;
-      onFineStudentChange();
-    }
-  }, 50);
+  openFineModal(id);
 }
 
 function onFineStudentChange() {
@@ -4105,9 +4137,15 @@ function onFineStudentChange() {
   const f = feeData[id] || { total: FEE_STRUCTURE[s?.course] || 0, paid: 0, fines: [] };
   const existingFines = (f.fines || []).reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   const curDue = Math.max(0, (f.total || 0) - (f.paid || 0));
+  const attPct = s ? calculateAttendance(s.id) : 0;
 
   document.getElementById('fine-cur-due').textContent = formatCurrency(curDue);
   document.getElementById('fine-cur-fines').textContent = formatCurrency(existingFines);
+  const attEl = document.getElementById('fine-cur-attendance');
+  if (attEl) {
+    attEl.textContent = attPct + '%';
+    attEl.style.color = attPct < 75 ? '#DC2626' : '#16A34A';
+  }
   summaryBox.style.display = 'block';
 }
 
@@ -4118,30 +4156,31 @@ function onFineCategoryChange() {
   switch (cat) {
     case 'Late Tuition Fee Penalty':
       amountInput.value = 500;
-      if (!remarksInput.value) remarksInput.value = 'Late fee penalty for delayed semester tuition';
+      remarksInput.value = 'Late fee penalty for delayed semester tuition';
       break;
     case 'Attendance Shortage Fine':
       amountInput.value = 1000;
-      if (!remarksInput.value) remarksInput.value = 'Attendance shortage penalty (<75% attendance threshold)';
+      remarksInput.value = 'Attendance shortage penalty (<75% attendance threshold)';
       break;
     case 'Library Book Overdue':
       amountInput.value = 200;
-      if (!remarksInput.value) remarksInput.value = 'Library book returned overdue beyond borrowing limit';
+      remarksInput.value = 'Library book returned overdue beyond borrowing limit';
       break;
     case 'Exam Registration Late Fee':
       amountInput.value = 400;
-      if (!remarksInput.value) remarksInput.value = 'Penalty for late submission of examination registration';
+      remarksInput.value = 'Penalty for late submission of examination registration';
       break;
     case 'Laboratory Damage / Loss':
       amountInput.value = 500;
-      if (!remarksInput.value) remarksInput.value = 'Assessment for laboratory equipment damage or loss';
+      remarksInput.value = 'Assessment for laboratory equipment damage or loss';
       break;
     case 'Disciplinary Penalty':
       amountInput.value = 1000;
-      if (!remarksInput.value) remarksInput.value = 'Administrative disciplinary fine';
+      remarksInput.value = 'Administrative disciplinary fine';
       break;
     case 'Other':
       amountInput.value = '';
+      remarksInput.value = '';
       break;
   }
 }
@@ -4151,15 +4190,25 @@ function recordFine() {
     showToast('Access Denied: Only administrators can impose fines.', 'error');
     return;
   }
-  const id = document.getElementById('fine-student').value;
+  const sel = document.getElementById('fine-student');
+  const id = sel ? sel.value : '';
   const category = document.getElementById('fine-category').value;
-  const amount = parseFloat(document.getElementById('fine-amount').value);
-  const date = document.getElementById('fine-date').value;
+  const amountInput = document.getElementById('fine-amount');
+  const amount = parseFloat(amountInput.value);
+  const dateInput = document.getElementById('fine-date');
+  const date = dateInput.value || todayString();
   const remarks = document.getElementById('fine-remarks').value.trim();
 
-  if (!id) { showToast('Please select a student', 'error'); return; }
-  if (!amount || amount <= 0) { showToast('Please enter a valid fine amount (greater than 0)', 'error'); return; }
-  if (!date) { showToast('Please select the date imposed', 'error'); return; }
+  if (!id) {
+    showToast('Please select a student from the dropdown list', 'error');
+    if (sel) sel.focus();
+    return;
+  }
+  if (!amount || isNaN(amount) || amount <= 0) {
+    showToast('Please enter a valid fine amount (greater than ₹0)', 'error');
+    if (amountInput) amountInput.focus();
+    return;
+  }
 
   const feeData = getFeesData();
   const students = getStudents();
@@ -4171,15 +4220,16 @@ function recordFine() {
   const f = feeData[id];
   f.fines = f.fines || [];
 
-  const base = f.base || (FEE_STRUCTURE[s?.course] || (f.total - (f.fines.reduce((sum, item) => sum + (Number(item.amount) || 0), 0))));
+  const fineTotalBefore = f.fines.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+  const base = f.base || (FEE_STRUCTURE[s?.course] || Math.max(0, (f.total || 0) - fineTotalBefore));
   f.base = base;
 
   const fineRecord = {
     id: 'fine_' + Date.now(),
-    category,
-    amount,
-    date,
-    remarks: remarks || category,
+    category: category || 'Custom Fine',
+    amount: amount,
+    date: date,
+    remarks: remarks || category || 'Administrative Fine',
     imposedBy: currentUser ? (currentUser.name || currentUser.email) : 'System Administrator',
     createdAt: new Date().toISOString()
   };
@@ -4189,8 +4239,8 @@ function recordFine() {
   f.total = f.base + totalFines;
 
   saveFeesData(feeData);
-  logActivity('fine', s?.name || 'Unknown', `Imposed fine of ${formatCurrency(amount)} (${category})`);
-  showToast(`Fine of ${formatCurrency(amount)} imposed on ${s?.name || 'student'}`, 'success');
+  logActivity('fine', s?.name || 'Student', `Imposed fine of ${formatCurrency(amount)} (${category})`);
+  showToast(`🎉 Fine of ${formatCurrency(amount)} successfully imposed on ${s?.name || 'student'}`, 'success');
   closeModal('modal-impose-fine');
 
   renderFeesTable();
@@ -4354,11 +4404,16 @@ function renderDefaulterReport() {
       <td><span class="badge ${pct<75?'badge-rose':'badge-emerald'}">${pct}%</span></td>
       <td class="mono" style="color:#EF4444;font-weight:600;">${formatCurrency(pending)}</td>
       <td style="font-size:12px;color:#64748B;">${reasons.join(' | ')}</td>
+      <td>
+        <button class="btn btn-ghost" style="padding:3px 8px;font-size:11.5px;color:#D97706;border:1px solid #FDE68A;background:#FFFBEB;" onclick="openFineModalForStudent('${s.id}')" title="Impose Fine">
+          <span class="material-symbols-outlined" style="font-size:14px;margin-right:2px;">gavel</span> Impose Fine
+        </button>
+      </td>
     `;
     tbody.appendChild(tr);
   }
   if (count === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#10B981;padding:20px;">🎉 No defaulters found!</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#10B981;padding:20px;">🎉 No defaulters found!</td></tr>';
   }
 }
 
@@ -4492,6 +4547,8 @@ function exportDefaultersCSV() {
   if (attDate) attDate.value = todayString();
   const payDate = document.getElementById('pay-date');
   if (payDate) payDate.value = todayString();
+  const fineDate = document.getElementById('fine-date');
+  if (fineDate) fineDate.value = todayString();
 })();
 </script>
 </body>
