@@ -9,6 +9,8 @@ ManageAll 2.0 gives faculty and administrators one place to record attendance, t
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-CDN-06B6D4?logo=tailwindcss&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase-Auth%20%26%20Firestore-FFCA28?logo=firebase&logoColor=black)
 
+> **Demo data notice:** all the data in this project is **dummy data**. The students, attendance records, fee records, course mentors and activity feed are generated sample data for demonstration. They do not describe real people, and any names, emails and phone numbers are made up.
+
 ---
 
 ## Features
@@ -92,7 +94,7 @@ No installation is needed.
    python3 -m http.server 8000
    ```
    then visit `http://localhost:8000`.
-3. A banner explains that Firebase isn't configured and the app is running in simulation mode. The portal loads with sample students, attendance and fee data, and the sign-in page offers demo accounts you can fill in with one click.
+3. A banner explains that Firebase isn't configured and the app is running in simulation mode. The portal loads with dummy students, attendance and fee data (15 sample students across five courses), and the sign-in page offers demo accounts you can fill in with one click.
 
 In demo mode, the email verification step is simulated with a button, so you can walk through the whole register, verify, approve and log in flow without sending real email.
 
